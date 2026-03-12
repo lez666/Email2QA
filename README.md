@@ -1,45 +1,56 @@
-## 项目简介
+# Email2QA - 从 Foxmail 导出邮件到知识库 QA 的完整解决方案
 
-这个仓库用于将 Unitree 技术支持相关邮件/Markdown 文档整理成结构化数据，方便后续用于检索、分析或接入 RAG / 知识库系统。  
-主要包含两条处理链路：
+## 项目目的
 
-- **邮件 → 结构化知识 JSONL → CSV**
-- **Markdown 邮件 → QA JSONL**
+本项目提供一套完整的解决方案，用于将 **从 Foxmail 导出的大量有意义的 .EML 文件**，通过 **LLM 提取成 QA 格式**，最终输出成 **CSV 文件**，方便整理知识库。
 
-所有输入/输出数据统一存放在 `data/` 目录下，代码只放在项目根目录。
+**你只需要自己购买 LLM 的 API Key 并接入项目即可使用。**
 
 ---
 
-## 目录结构（简要）
+## 核心流程
 
-- **distill_unitree_emails.py**：从原始邮件文本中蒸馏技术知识，输出 JSONL。
-- **export_jsonl_to_csv.py**：把蒸馏后的 JSONL 转成 CSV，方便用 Excel 查看/编辑。
-- **process_email_qa.py**：从 Markdown 格式的技术支持邮件中抽取 QA 对。
-- **prompts/**：集中存放各脚本的系统 Prompt 文本（方便单独调整提示词）。
-- **data/**：所有输入/输出数据目录（请不要把数据直接放在项目根目录）。
-  - **emails/**：原始技术支持邮件文件（.eml/.html/.txt/.md 等）。
-  - **support_md_full/**：Markdown 格式的完整邮件线程。
-  - **qa_output/**：QA 结果输出目录。
-  - **unitree_knowledge_distilled.jsonl / .csv**：蒸馏后的知识库数据及其 CSV 版本。
-  - **processed_files.log**：`distill_unitree_emails.py` 的断点续传日志。
-  - **support_md_full_index.txt**：对 `support_md_full/` 的索引（如有需要可自行维护）。
-  - **1/**、**2/**：历史或多轮实验结果备份，可根据需要保留/清理。
-- **secrets/**：本地保存的 `openai_key.txt`，不应提交到版本库。
+```
+Foxmail 导出的 .EML 文件
+    ↓
+[可选] 转换为 Markdown 格式（不使用 LLM，纯格式转换）
+    ↓
+使用 LLM 从 Markdown 邮件中提取结构化知识（QA 格式）
+    ↓
+输出 JSONL / CSV 格式，用于知识库整理
+```
+
+---
+
+## 目录结构
+
+### 代码文件（项目根目录）
+
+- **`process_email_qa.py`**：从 Markdown 格式的邮件线程中抽取 QA（**单线程顺序版**，稳定可靠）
+- **`process_email_qa_async.py`**：从 Markdown 格式的邮件线程中抽取 QA（**异步并发版**，速度更快，推荐用于大批量处理）
+- **`distill_unitree_emails.py`**：从原始邮件文本中蒸馏技术知识，输出 JSONL（异步并发）
+- **`export_jsonl_to_csv.py`**：把 JSONL 转成 CSV，方便用 Excel 查看/编辑
+- **`check_progress.py`**：检查处理进度的工具脚本
+- **`prompts/`**：集中存放各脚本的系统 Prompt 文本（方便单独调整提示词）
+  - `distill_unitree_emails_system.txt`：统一的知识蒸馏提示词（两个脚本都用这个）
+
+### 数据目录（`data/` 下）
+
+- **`email_input/`**：存放从 Foxmail 导出的原始 .EML 文件
+- **`md_full/`**：存放完整的 Markdown 格式邮件线程（从 .EML 转换而来，**未经过 LLM 处理**）
+- **`qa_output/`**：QA 结果输出目录
+  - `email_qa.jsonl`：提取的 QA 数据（JSONL 格式）
+- **`unitree_knowledge_distilled.jsonl`** / **`.csv`**：蒸馏后的知识库数据及其 CSV 版本
+- **`processed_files.log`**：断点续传日志
+- **`secrets/`**：本地保存的 `openai_key.txt`（不应提交到版本库）
 
 ---
 
 ## 环境依赖
 
-建议使用 Python 3.10+。
+建议使用 **Python 3.10+**。
 
-- **通用依赖**
-  - `openai>=1.0.0`
-- **仅 distill_unitree_emails.py 需要**
-  - `beautifulsoup4`
-  - `tenacity`
-  - `tqdm`
-
-示例安装（可根据自己环境调整）：
+### 安装依赖
 
 ```bash
 pip install "openai>=1.0.0" beautifulsoup4 tenacity tqdm
@@ -49,101 +60,128 @@ pip install "openai>=1.0.0" beautifulsoup4 tenacity tqdm
 
 ## OpenAI API 配置
 
-三种方式选其一：
+**两种方式选其一：**
 
-- **环境变量方式（推荐）**
+### 方式 1：环境变量（推荐）
 
 ```bash
 export OPENAI_API_KEY="你的_openai_api_key"
-export OPENAI_BASE_URL="https://api.openai.com/v1"  # 如用官方云可省略
+export OPENAI_MODEL="gpt-5.4"  # 可选，默认就是 gpt-5.4
 ```
 
-- **本地 secrets 文件**
+### 方式 2：本地 secrets 文件
 
-在项目根目录创建 `secrets/openai_key.txt`，把 API Key 写进去（仅本地使用，不要提交到 Git）。
+在项目根目录创建 `secrets/openai_key.txt`，把 API Key 写进去（仅本地使用，不会提交到 Git）。
+
+**注意**：`secrets/openai_key.txt` 在仓库中已有一个示例文件，你需要将其中的占位符替换为你的真实 API Key。
 
 ---
 
-## 流程一：邮件 → 结构化知识（JSONL / CSV）
+## 使用流程
 
-### 1. 准备数据
+### 步骤 1：准备 .EML 文件
 
-- 将 1500 封（或任意数量）原始邮件文件放入：
-  - `data/emails/` 目录下
-  - 支持 `.eml` / `.html` / `.htm` / `.txt` / `.md` 等扩展名
+将从 Foxmail 导出的 .EML 文件放入：
 
-### 2. 运行蒸馏脚本
-
-在项目根目录执行：
-
-```bash
-python distill_unitree_emails.py
+```
+data/email_input/
 ```
 
-脚本会：
+### 步骤 2：[可选] 将 .EML 转换为 Markdown
 
-- 从 `data/emails/` 读取邮件内容，做清洗、脱敏、去历史回复等。
-- 调用 OpenAI 模型，抽取有价值的技术知识点。
-- 按行写入 `data/unitree_knowledge_distilled.jsonl`（每行一个 JSON 对象）。
-- 记录已处理文件名到 `data/processed_files.log`，支持断点续传。
+如果你需要将 .EML 转换为 Markdown 格式（**不使用 LLM，纯格式转换**），可以使用你习惯的工具或脚本。
 
-可以多次运行脚本，它会跳过已经出现在 `processed_files.log` 里的文件。
+转换后的 Markdown 文件放入：
 
-### 3. 导出 CSV
-
-当 `data/unitree_knowledge_distilled.jsonl` 生成后，可执行：
-
-```bash
-python export_jsonl_to_csv.py
+```
+data/md_full/
 ```
 
-脚本会：
+**重要提示**：`data/md_full/` 中的 Markdown 文件应该是**未经过 LLM 处理的原始数据**，脚本会直接使用这些原始内容进行知识提取。
 
-- 从 `data/unitree_knowledge_distilled.jsonl` 读取每一条记录。
-- 把多行文本压成单行，避免 CSV 换行导致错列。
-- 生成 `data/unitree_knowledge_distilled.csv`，使用 `utf-8-sig` 编码，方便 Excel 打开。
+### 步骤 3：使用 LLM 提取 QA
 
----
-
-## 流程二：Markdown 邮件 → QA JSONL
-
-### 1. 准备 Markdown 邮件
-
-- 将已经整理好的 Markdown 格式邮件线程放入：
-  - `data/support_md_full/` 目录下
-  - 每封/每个线程一个 `.md` 文件
-
-（如有需要，可用 `data/support_md_full_index.txt` 维护索引/说明。）
-
-### 2. 抽取 QA
-
-在项目根目录执行：
+#### 方案 A：单线程版本（稳定可靠）
 
 ```bash
 python process_email_qa.py
 ```
 
-脚本会：
+- 输入：`data/md_full/` 下的所有 `.md` 文件
+- 输出：`data/qa_output/email_qa.jsonl`
+- 特点：顺序处理，稳定可靠，适合小批量或调试
 
-- 遍历 `data/support_md_full/` 下所有 `.md` 文件。
-- 调用 OpenAI 模型，从每个邮件线程中抽取若干条 QA。
-- 将结果写入 `data/qa_output/email_qa.jsonl`，每行一条记录，形如：
-  - `{"source_file": "xxx.md", "qa": {...}}`
+#### 方案 B：异步并发版本（推荐，速度快）
 
-如果想先只处理部分文件，可以在 `process_email_qa.py` 中将 `limit_files=None` 改成一个整数（比如 `20`）。
+```bash
+python process_email_qa_async.py
+```
+
+- 输入：`data/md_full/` 下的所有 `.md` 文件
+- 输出：`data/qa_output/email_qa.jsonl`
+- 特点：并发处理（默认 8 个并发），速度快，适合大批量处理
+- 可通过修改脚本中的 `CONCURRENCY` 变量调整并发数（建议 5~10）
+
+**输出格式**：每行一个 JSON 对象，包含以下字段：
+
+```json
+{
+  "file": "邮件文件名.md",
+  "category": "问题类型（environment/sdk/control/hardware/sensor/other）",
+  "model": "机器人型号（Go2/G1/B2等）",
+  "issue": "问题描述（中文）",
+  "resolution": "解决方案（中文）",
+  "code_snippet": "代码片段或关键命令"
+}
+```
+
+### 步骤 4：导出为 CSV
+
+```bash
+python export_jsonl_to_csv.py
+```
+
+脚本会读取 `data/unitree_knowledge_distilled.jsonl`（或你指定的 JSONL 文件），生成对应的 CSV 文件，方便用 Excel 打开和编辑。
+
+---
+
+## 检查处理进度
+
+在处理过程中，可以随时运行：
+
+```bash
+python check_progress.py
+```
+
+查看当前处理进度（已处理的文件数、已生成的记录数等）。
 
 ---
 
 ## 数据与代码分离约定
 
-- **代码**：只放在项目根目录（`.py` 文件等）。
+- **代码**：只放在项目根目录（`.py` 文件等）
 - **数据**：统一放在 `data/` 下，包括：
-  - 原始邮件：`data/emails/`
-  - Markdown 邮件：`data/support_md_full/`
+  - 原始邮件：`data/email_input/`
+  - Markdown 邮件：`data/md_full/`
   - 中间结果：`data/unitree_knowledge_distilled.jsonl`、`data/processed_files.log`
   - 导出结果：`data/unitree_knowledge_distilled.csv`、`data/qa_output/email_qa.jsonl`
-  - 其他实验/备份：`data/1/`、`data/2/` 等
 
-后续如果增加新的脚本或数据类型，建议也遵循相同约定：  
 **主目录只放代码，所有数据统一挂在 `data/` 下对应子目录。**
 
+---
+
+## 注意事项
+
+1. **API Key 安全**：`secrets/openai_key.txt` 已在 `.gitignore` 中，不会被提交到版本库。请妥善保管你的 API Key。
+
+2. **数据来源**：`process_email_qa.py` 和 `process_email_qa_async.py` 处理的数据是**未经过 LLM 处理的原始 Markdown**，脚本会在提示词中明确告知模型这一点。
+
+3. **并发控制**：`process_email_qa_async.py` 默认并发数为 8，可根据你的 API 限速和网络情况调整 `CONCURRENCY` 变量。
+
+4. **断点续传**：`distill_unitree_emails.py` 支持断点续传（通过 `processed_files.log`），但 `process_email_qa.py` 和 `process_email_qa_async.py` 目前不支持，如需重新处理需要清空输出文件。
+
+---
+
+## 许可证
+
+本项目仅供学习和研究使用。

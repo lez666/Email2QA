@@ -15,7 +15,7 @@ from openai import OpenAI, APIConnectionError
    python process_email_qa.py
 
 3. 数据目录约定（所有输入/输出都在 data/ 下）：
-   - 输入：遍历 ./data/support_md_full 下的所有 .md 邮件文件
+   - 输入：遍历 ./data/md_full 下的所有 .md 邮件文件（这些是未经过 LLM 处理的原始 Markdown）
    - 输出：./data/qa_output/email_qa.jsonl（每行一条 QA 记录，JSON 格式）
 
 你可以之后再把 qa_output/email_qa.jsonl 导入到自己的知识库系统。
@@ -75,7 +75,8 @@ def build_prompt(email_markdown: str, filename: str) -> list:
     user_msg = {
         "role": "user",
         "content": (
-            f"下面是一个 Markdown 格式的技术支持邮件线程内容，文件名：{filename}\n\n"
+            f"下面是一个 Markdown 格式的技术支持邮件线程内容（文件名：{filename}）。"
+            "这些数据是直接从邮件转换而来的原始 Markdown，未经过任何 LLM 处理。\n\n"
             "---------------- 原始邮件开始 ----------------\n"
             f"{email_markdown}\n"
             "---------------- 原始邮件结束 ----------------\n\n"
@@ -220,7 +221,7 @@ def main():
     # 默认输入目录和输出路径，你也可以根据需要改成 argparse 接收命令行参数
     project_root = PROJECT_ROOT
     data_dir = project_root / "data"
-    input_dir = data_dir / "support_md_full"
+    input_dir = data_dir / "md_full"
     output_path = data_dir / "qa_output" / "email_qa.jsonl"
 
     # 如需测试先只跑前 N 个文件，可以把 limit_files 改成一个整数，比如 20
