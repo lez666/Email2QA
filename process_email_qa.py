@@ -180,17 +180,23 @@ def process_directory(
     print(f"[INFO] 将处理目录：{input_dir}")
     print(f"[INFO] 找到 {len(md_files)} 个 markdown 邮件文件")
     print(f"[INFO] 输出文件：{output_path}")
+    print(f"[INFO] 模型：{model}\n")
 
-    processed = 0
+    processed_files = 0
+    total_records = 0
     with output_path.open("w", encoding="utf-8") as fout:
         for idx, path in enumerate(md_files, start=1):
             filename = path.name
-            print(f"[{idx}/{len(md_files)}] 处理 {filename} ...")
 
             try:
                 content = path.read_text(encoding="utf-8")
             except UnicodeDecodeError:
                 print(f"[WARN] 读取文件失败（编码问题），已跳过：{filename}")
+                processed_files += 1
+                # 每处理 10 个文件输出一次进度
+                if processed_files % 10 == 0:
+                    progress_pct = (processed_files / len(md_files)) * 100
+                    print(f"[进度] 已处理文件：{processed_files}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{total_records} | 完成度：{(total_records/len(md_files)*100):.2f}%")
                 continue
 
             # 可以根据需要做截断，这里先直接全量丢给模型
@@ -198,7 +204,13 @@ def process_directory(
                 client=client, email_text=content, filename=filename, model=model
             )
 
+            processed_files += 1
+
             if not qa_items:
+                # 每处理 10 个文件输出一次进度
+                if processed_files % 10 == 0:
+                    progress_pct = (processed_files / len(md_files)) * 100
+                    print(f"[进度] 已处理文件：{processed_files}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{total_records} | 完成度：{(total_records/len(md_files)*100):.2f}%")
                 continue
 
             for qa in qa_items:
@@ -212,9 +224,16 @@ def process_directory(
                     "code_snippet": qa.get("code_snippet", "") or "",
                 }
                 fout.write(json.dumps(record, ensure_ascii=False) + "\n")
-                processed += 1
+                total_records += 1
 
-    print(f"[DONE] 共写出 {processed} 条 QA 记录到 {output_path}")
+            # 每处理 10 个文件输出一次进度
+            if processed_files % 10 == 0:
+                progress_pct = (processed_files / len(md_files)) * 100
+                print(f"[进度] 已处理文件：{processed_files}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{total_records} | 完成度：{(total_records/len(md_files)*100):.2f}%")
+
+    print(f"\n[DONE] 处理完成！")
+    print(f"[DONE] 共处理文件：{processed_files}/{len(md_files)}")
+    print(f"[DONE] 共写出 {total_records} 条 QA 记录到 {output_path}")
 
 
 def main():

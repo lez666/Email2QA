@@ -222,25 +222,48 @@ async def process_directory_async(
     print(f"[INFO] 将处理目录：{input_dir}")
     print(f"[INFO] 找到 {len(md_files)} 个 markdown 邮件文件")
     print(f"[INFO] 输出文件：{output_path}")
-    print(f"[INFO] 并发数：{CONCURRENCY}")
+    print(f"[INFO] 模型：{model}")
+    print(f"[INFO] 并发数：{CONCURRENCY}\n")
 
     # 清空输出文件（从头开始）
     output_path.write_text("", encoding="utf-8")
 
     jsonl_lock = asyncio.Lock()
     sem = asyncio.Semaphore(CONCURRENCY)
+    processed_count = asyncio.Lock()
+    processed_counter = 0
+    progress_lock = asyncio.Lock()
 
     async def worker(path: Path, pbar: tqdm):
+        nonlocal processed_counter
         async with sem:
             await process_one_file(client, path, output_path, jsonl_lock, pbar, model)
+            
+            # 更新处理计数并输出进度
+            async with processed_count:
+                processed_counter += 1
+                current_processed = processed_counter
+                
+                # 每处理 10 个文件输出一次进度
+                if current_processed % 10 == 0 or current_processed == len(md_files):
+                    # 统计当前记录数（需要加锁避免并发读取文件）
+                    async with jsonl_lock:
+                        current_record_count = sum(1 for _ in output_path.open("r", encoding="utf-8") if _.strip())
+                    
+                    progress_pct = (current_processed / len(md_files)) * 100
+                    completion_pct = (current_record_count / len(md_files)) * 100 if len(md_files) > 0 else 0
+                    async with progress_lock:
+                        print(f"[进度] 已处理文件：{current_processed}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{current_record_count} | 完成度：{completion_pct:.2f}%")
 
     with tqdm(total=len(md_files), desc="Distilling markdown emails") as pbar:
         tasks = [asyncio.create_task(worker(p, pbar)) for p in md_files]
         await asyncio.gather(*tasks)
 
     # 统计最终记录数
-    record_count = sum(1 for _ in output_path.open("r", encoding="utf-8") if _.strip())
-    print(f"[DONE] 共写出 {record_count} 条 QA 记录到 {output_path}")
+    final_record_count = sum(1 for _ in output_path.open("r", encoding="utf-8") if _.strip())
+    print(f"\n[DONE] 处理完成！")
+    print(f"[DONE] 共处理文件：{processed_counter}/{len(md_files)}")
+    print(f"[DONE] 共写出 {final_record_count} 条 QA 记录到 {output_path}")
 
 
 def main():
