@@ -7,8 +7,7 @@ data/unitree_knowledge_distilled.jsonl
 data/unitree_knowledge_distilled.csv
 data/processed_files.log
 
-# 历史实验目录（GPT-4 的结果可以保留，GPT-5 的不公开）
-data/3/
+# 历史实验目录（data/3/ 是 GPT-4 的 demo 结果，可以公开）
 # data/1/ 和 data/2/ 已删除
 
 # 输入数据（通常不提交，除非是示例）
