@@ -1,5 +1,15 @@
 # Email2QA - 从 Foxmail 导出邮件到知识库 QA 的完整解决方案
 
+## 项目背景
+
+🚀 项目背景  
+技术支持（Support Engineer）长期深陷重复性泥潭：
+
+📥 邮件解析：每日处理海量雷同的技术咨询，效率低下。  
+🏗️ 知识断层：宝贵的解决方案散落在数 GB 历史邮件中，难以沉淀为结构化知识。
+
+本项目旨在利用 AI Agent 实现从“人工检索”到“智能生成”的跨越，自动清洗数据并重构 QA 知识库，解放双手，专注核心研发！🔥
+
 ## 项目目的
 
 本项目提供一套完整的解决方案，用于将 **从 Foxmail 导出的大量有意义的 .EML 文件**，通过 **LLM 提取成 QA 格式**，最终输出成 **CSV 文件**，方便整理知识库。
@@ -26,11 +36,10 @@ Foxmail 导出的 .EML 文件
 
 ### 代码文件（项目根目录）
 
-- **`process_email_qa.py`**：从 Markdown 格式的邮件线程中抽取 QA（**单线程顺序版**，稳定可靠）
-- **`process_email_qa_async.py`**：从 Markdown 格式的邮件线程中抽取 QA（**异步并发版**，速度更快，推荐用于大批量处理）
-- **`distill_unitree_emails.py`**：从原始邮件文本中蒸馏技术知识，输出 JSONL（异步并发）
+- **`distill_unitree_emails.py`**：从**原始邮件文件**中蒸馏通用技术知识（异步并发），输出到 `data/unitree_knowledge_distilled.jsonl`
+- **`process_email_qa.py`**：从 **Markdown 格式的邮件线程** 中抽取 QA（单线程顺序版，稳定可靠）
+- **`process_email_qa_async.py`**：从 Markdown 格式的邮件线程中抽取 QA（异步并发版，速度更快，推荐用于大批量处理）
 - **`export_jsonl_to_csv.py`**：把 JSONL 转成 CSV，方便用 Excel 查看/编辑
-- **`check_progress.py`**：检查处理进度的工具脚本
 - **`prompts/`**：集中存放各脚本的系统 Prompt 文本（方便单独调整提示词）
   - `distill_unitree_emails_system.txt`：统一的知识蒸馏提示词（两个脚本都用这个）
 
@@ -107,7 +116,21 @@ data/md_full/
 
 **重要提示**：`data/md_full/` 中的 Markdown 文件应该是**未经过 LLM 处理的原始数据**，脚本会直接使用这些原始内容进行知识提取。
 
-### 步骤 3：使用 LLM 提取 QA
+### 步骤 3A：直接从原始邮件蒸馏知识（可选，高度自动化）
+
+如果你手上是一大堆「原始邮件」（.eml/.html/.txt/.md 混合），不想自己先整理成 Markdown 线程，可以直接跑：
+
+```bash
+python distill_unitree_emails.py
+```
+
+- 输入：`data/emails/` 下的各种原始邮件文件  
+- 输出：`data/unitree_knowledge_distilled.jsonl`（之后可用 `export_jsonl_to_csv.py` 转成 CSV）  
+- 特点：自动做基本清洗（签名/历史引用/简单脱敏），更适合作为「通用知识库」的基础。
+
+### 步骤 3B：从 Markdown 邮件线程中提取 QA（推荐，用于已经整理好的邮件）
+
+如果你已经有了 `data/md_full/` 里的 Markdown 邮件线程，推荐用下面两个脚本之一：
 
 #### 方案 A：单线程版本（稳定可靠）
 
@@ -143,7 +166,7 @@ python process_email_qa_async.py
 }
 ```
 
-### 步骤 4：导出为 CSV
+### 步骤 4：导出为 CSV（可选）
 
 ```bash
 python export_jsonl_to_csv.py
