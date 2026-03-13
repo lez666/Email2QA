@@ -1,6 +1,10 @@
 # 本地 API Key（不应提交）
 secrets/
 
+# Python 缓存文件
+__pycache__/
+*.pyc
+
 # GPT-5 处理结果（不公开到 GitHub）
 data/qa_output/
 data/unitree_knowledge_distilled.jsonl
@@ -13,6 +17,10 @@ data/processed_files.log
 # 输入数据（通常不提交，除非是示例）
 data/email_input/
 data/md_full/
+
+# 大规模原始邮件 markdown（本地使用，不推到 GitHub）
+data/msy_email_md_full_demo/
+data/support_lez_full/
 
 # 旧的目录（已废弃）
 data/support_md_full/

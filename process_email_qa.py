@@ -49,9 +49,14 @@ def load_api_key() -> str:
 
     key_path = Path(__file__).parent / "secrets" / "openai_key.txt"
     if key_path.exists():
-        return key_path.read_text(encoding="utf-8").strip()
+        content = key_path.read_text(encoding="utf-8")
+        # 跳过注释行（以 # 开头的行），只读取实际的 key
+        for line in content.splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and line.startswith("sk-"):
+                return line
 
-    raise RuntimeError("未找到 OPENAI_API_KEY，请正确配置。")
+    raise RuntimeError("未找到 OPENAI_API_KEY，请正确配置。请设置环境变量 OPENAI_API_KEY 或在 secrets/openai_key.txt 中填写真实的 API key（跳过注释行）。")
 
 
 def get_client() -> OpenAI:
@@ -161,6 +166,7 @@ def process_directory(
 ) -> None:
     """
     遍历目录下的所有 .md 文件，抽取 QA 并写入 JSONL。
+    支持断点续传：如果输出文件已存在，会读取已处理的文件名，跳过这些文件继续处理。
 
     - input_dir: 存放邮件 markdown 的目录，比如 ./support_md_full
     - output_path: 输出的 JSONL 文件路径，比如 ./qa_output/email_qa.jsonl
@@ -177,15 +183,38 @@ def process_directory(
     if limit_files is not None:
         md_files = md_files[:limit_files]
 
+    # 断点续传：读取已处理的文件名
+    processed_file_set = set()
+    existing_record_count = 0
+    if output_path.exists():
+        print(f"[INFO] 检测到已有输出文件：{output_path}")
+        try:
+            with output_path.open("r", encoding="utf-8") as fin:
+                for line in fin:
+                    if line.strip():
+                        try:
+                            record = json.loads(line)
+                            if "file" in record:
+                                processed_file_set.add(record["file"])
+                            existing_record_count += 1
+                        except json.JSONDecodeError:
+                            pass
+            print(f"[INFO] 已找到 {len(processed_file_set)} 个已处理的文件，{existing_record_count} 条已有记录")
+        except Exception as e:
+            print(f"[WARN] 读取已有文件失败：{e}，将从头开始处理")
+
+    # 过滤掉已处理的文件
+    remaining_files = [f for f in md_files if f.name not in processed_file_set]
     print(f"[INFO] 将处理目录：{input_dir}")
     print(f"[INFO] 找到 {len(md_files)} 个 markdown 邮件文件")
+    print(f"[INFO] 已处理 {len(processed_file_set)} 个文件，剩余 {len(remaining_files)} 个文件待处理")
     print(f"[INFO] 输出文件：{output_path}")
     print(f"[INFO] 模型：{model}\n")
 
-    processed_files = 0
-    total_records = 0
-    with output_path.open("w", encoding="utf-8") as fout:
-        for idx, path in enumerate(md_files, start=1):
+    processed_files = len(processed_file_set)
+    total_records = existing_record_count
+    with output_path.open("a", encoding="utf-8") as fout:
+        for idx, path in enumerate(remaining_files, start=1):
             filename = path.name
 
             try:
@@ -196,7 +225,7 @@ def process_directory(
                 # 每处理 10 个文件输出一次进度
                 if processed_files % 10 == 0:
                     progress_pct = (processed_files / len(md_files)) * 100
-                    print(f"[进度] 已处理文件：{processed_files}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{total_records} | 完成度：{(total_records/len(md_files)*100):.2f}%")
+                    print(f"[进度] 已处理文件：{processed_files}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{total_records} | 完成度：{(total_records/len(md_files)*100):.2f}%", flush=True)
                 continue
 
             # 可以根据需要做截断，这里先直接全量丢给模型
@@ -208,9 +237,9 @@ def process_directory(
 
             if not qa_items:
                 # 每处理 10 个文件输出一次进度
-                if processed_files % 10 == 0:
+                if processed_files % 10 == 0 or processed_files == len(md_files):
                     progress_pct = (processed_files / len(md_files)) * 100
-                    print(f"[进度] 已处理文件：{processed_files}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{total_records} | 完成度：{(total_records/len(md_files)*100):.2f}%")
+                    print(f"[进度] 已处理文件：{processed_files}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{total_records} | 完成度：{(total_records/len(md_files)*100):.2f}%", flush=True)
                 continue
 
             for qa in qa_items:
@@ -227,9 +256,9 @@ def process_directory(
                 total_records += 1
 
             # 每处理 10 个文件输出一次进度
-            if processed_files % 10 == 0:
+            if processed_files % 10 == 0 or processed_files == len(md_files):
                 progress_pct = (processed_files / len(md_files)) * 100
-                print(f"[进度] 已处理文件：{processed_files}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{total_records} | 完成度：{(total_records/len(md_files)*100):.2f}%")
+                print(f"[进度] 已处理文件：{processed_files}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{total_records} | 完成度：{(total_records/len(md_files)*100):.2f}%", flush=True)
 
     print(f"\n[DONE] 处理完成！")
     print(f"[DONE] 共处理文件：{processed_files}/{len(md_files)}")
@@ -241,6 +270,8 @@ def main():
     project_root = PROJECT_ROOT
     data_dir = project_root / "data"
     input_dir = data_dir / "md_full"
+    # 与异步版本保持一致，默认输出到 data/qa_output/email_qa.jsonl，
+    # 如果文件已存在会自动做断点续传（不会覆盖旧结果）
     output_path = data_dir / "qa_output" / "email_qa.jsonl"
 
     # 如需测试先只跑前 N 个文件，可以把 limit_files 改成一个整数，比如 20

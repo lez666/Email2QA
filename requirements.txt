@@ -1,0 +1,6 @@
+openai>=1.0.0
+google-genai>=0.2.0
+beautifulsoup4
+tenacity
+tqdm
+

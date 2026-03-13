@@ -1,10 +1,16 @@
 import asyncio
 import os
 import json
+import sys
 from pathlib import Path
 from typing import Any, Dict, List
+from datetime import datetime
 
 from openai import AsyncOpenAI, RateLimitError, APIError
+
+# 设置无缓冲输出，确保进度实时显示
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(line_buffering=True)
 from tenacity import (
     AsyncRetrying,
     retry_if_exception_type,
@@ -39,6 +45,7 @@ from tqdm import tqdm
 
 PROJECT_ROOT = Path(__file__).parent
 PROMPT_DIR = PROJECT_ROOT / "prompts"
+DATA_DIR = PROJECT_ROOT / "data"
 
 # 模型名称优先从环境变量 OPENAI_MODEL 读取，便于在不同环境下灵活切换；
 # 未设置时默认使用最新的 GPT-5.4 模型。
@@ -46,6 +53,9 @@ DEFAULT_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.4").strip() or "gpt-5.4"
 
 # 并发数量，建议 5~10，可根据你的 API 限速和网络情况调整
 CONCURRENCY = 8
+
+# 日志文件路径
+PROCESS_LOG = DATA_DIR / "qa_output" / "process_log.txt"
 
 
 def load_prompt(filename: str) -> str:
@@ -67,9 +77,14 @@ def load_api_key() -> str:
 
     key_path = Path(__file__).parent / "secrets" / "openai_key.txt"
     if key_path.exists():
-        return key_path.read_text(encoding="utf-8").strip()
+        content = key_path.read_text(encoding="utf-8")
+        # 跳过注释行（以 # 开头的行），只读取实际的 key
+        for line in content.splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and line.startswith("sk-"):
+                return line
 
-    raise RuntimeError("未找到 OPENAI_API_KEY，请正确配置。")
+    raise RuntimeError("未找到 OPENAI_API_KEY，请正确配置。请设置环境变量 OPENAI_API_KEY 或在 secrets/openai_key.txt 中填写真实的 API key（跳过注释行）。")
 
 
 def get_client() -> AsyncOpenAI:
@@ -131,7 +146,27 @@ async def extract_qa_from_email_async(
                 )
                 break
     except Exception as e:
-        print(f"[ERROR] OpenAI 调用失败 {filename}: {e}")
+        import traceback
+        # 尝试获取完整的错误信息
+        try:
+            error_str = str(e)
+            # 尝试打印，如果失败说明是编码问题
+            try:
+                print(f"[ERROR] OpenAI 调用失败 {filename}: {error_str}")
+            except (UnicodeEncodeError, UnicodeDecodeError):
+                # 如果打印失败，使用安全的编码方式
+                safe_filename = filename.encode('ascii', errors='replace').decode('ascii')
+                safe_error = error_str.encode('ascii', errors='replace').decode('ascii')
+                print(f"[ERROR] OpenAI call failed {safe_filename}: {safe_error}")
+        except Exception as print_err:
+            # 如果连错误信息都无法获取，记录到日志文件
+            try:
+                with open("error_debug.log", "a", encoding="utf-8") as f:
+                    f.write(f"Error processing {filename}: {repr(e)}\n")
+                    f.write(f"Print error: {repr(print_err)}\n")
+                    traceback.print_exc(file=f)
+            except:
+                pass
         return []
 
     content = resp.choices[0].message.content
@@ -167,9 +202,9 @@ async def process_one_file(
     filename = path.name
 
     try:
-        content = path.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        pbar.write(f"[WARN] 读取文件失败（编码问题），已跳过：{filename}")
+        content = path.read_text(encoding="utf-8", errors="ignore")
+    except Exception as e:
+        pbar.write(f"[WARN] 读取文件失败，已跳过：{filename}，错误：{e}")
         pbar.update(1)
         return
 
@@ -219,11 +254,13 @@ async def process_directory_async(
     if limit_files is not None:
         md_files = md_files[:limit_files]
 
-    print(f"[INFO] 将处理目录：{input_dir}")
-    print(f"[INFO] 找到 {len(md_files)} 个 markdown 邮件文件")
-    print(f"[INFO] 输出文件：{output_path}")
-    print(f"[INFO] 模型：{model}")
-    print(f"[INFO] 并发数：{CONCURRENCY}\n")
+    start_time = datetime.now()
+    print(f"[INFO] 将处理目录：{input_dir}", flush=True)
+    print(f"[INFO] 找到 {len(md_files)} 个 markdown 邮件文件", flush=True)
+    print(f"[INFO] 输出文件：{output_path}", flush=True)
+    print(f"[INFO] 模型：{model}", flush=True)
+    print(f"[INFO] 并发数：{CONCURRENCY}", flush=True)
+    print(f"[INFO] 开始时间：{start_time.strftime('%Y-%m-%d %H:%M:%S')}\n", flush=True)
 
     # 清空输出文件（从头开始）
     output_path.write_text("", encoding="utf-8")
@@ -253,7 +290,7 @@ async def process_directory_async(
                     progress_pct = (current_processed / len(md_files)) * 100
                     completion_pct = (current_record_count / len(md_files)) * 100 if len(md_files) > 0 else 0
                     async with progress_lock:
-                        print(f"[进度] 已处理文件：{current_processed}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{current_record_count} | 完成度：{completion_pct:.2f}%")
+                        print(f"[进度] 已处理文件：{current_processed}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{current_record_count} | 完成度：{completion_pct:.2f}%", flush=True)
 
     with tqdm(total=len(md_files), desc="Distilling markdown emails") as pbar:
         tasks = [asyncio.create_task(worker(p, pbar)) for p in md_files]
@@ -261,9 +298,32 @@ async def process_directory_async(
 
     # 统计最终记录数
     final_record_count = sum(1 for _ in output_path.open("r", encoding="utf-8") if _.strip())
-    print(f"\n[DONE] 处理完成！")
-    print(f"[DONE] 共处理文件：{processed_counter}/{len(md_files)}")
-    print(f"[DONE] 共写出 {final_record_count} 条 QA 记录到 {output_path}")
+    end_time = datetime.now()
+    duration = (end_time - start_time).total_seconds()
+    print(f"\n[DONE] 处理完成！", flush=True)
+    print(f"[DONE] 共处理文件：{processed_counter}/{len(md_files)}", flush=True)
+    print(f"[DONE] 共写出 {final_record_count} 条 QA 记录到 {output_path}", flush=True)
+    print(f"[DONE] 总耗时：{duration:.1f} 秒 ({duration/60:.1f} 分钟)", flush=True)
+    
+    # 写入日志文件
+    log_entry = {
+        "start_time": start_time.strftime("%Y-%m-%d %H:%M:%S"),
+        "end_time": end_time.strftime("%Y-%m-%d %H:%M:%S"),
+        "duration_seconds": round(duration, 2),
+        "model": model,
+        "concurrency": CONCURRENCY,
+        "total_files": len(md_files),
+        "processed_files": processed_counter,
+        "generated_records": final_record_count,
+        "input_dir": str(input_dir),
+        "output_file": str(output_path),
+    }
+    
+    PROCESS_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with PROCESS_LOG.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+    
+    print(f"[LOG] 处理日志已保存到：{PROCESS_LOG}", flush=True)
 
 
 def main():

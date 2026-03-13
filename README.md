@@ -52,8 +52,16 @@ Foxmail 导出的 .EML 文件
 
 ### 安装依赖
 
+推荐使用 `requirements.txt` 一键安装：
+
 ```bash
-pip install "openai>=1.0.0" beautifulsoup4 tenacity tqdm
+pip install -r requirements.txt
+```
+
+如果你只想手动安装核心依赖，可以参考：
+
+```bash
+pip install "openai>=1.0.0" "google-genai>=0.2.0" beautifulsoup4 tenacity tqdm
 ```
 
 ---
