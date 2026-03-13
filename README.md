@@ -39,9 +39,11 @@ Foxmail 导出的 .EML 文件
 - **`distill_unitree_emails.py`**：从**原始邮件文件**中蒸馏通用技术知识（异步并发），输出到 `data/unitree_knowledge_distilled.jsonl`
 - **`process_email_qa.py`**：从 **Markdown 格式的邮件线程** 中抽取 QA（单线程顺序版，稳定可靠）
 - **`process_email_qa_async.py`**：从 Markdown 格式的邮件线程中抽取 QA（异步并发版，速度更快，推荐用于大批量处理）
+- **`clean_qa_jsonl.py`**：对已抽取好的 QA JSONL 做二次清洗，统一口吻/人称，去掉私有网盘/视频等敏感链接
 - **`export_jsonl_to_csv.py`**：把 JSONL 转成 CSV，方便用 Excel 查看/编辑
 - **`prompts/`**：集中存放各脚本的系统 Prompt 文本（方便单独调整提示词）
-  - `distill_unitree_emails_system.txt`：统一的知识蒸馏提示词（两个脚本都用这个）
+  - `distill_unitree_emails_system.txt`：统一的知识蒸馏提示词（多个脚本共享）
+  - `clean_qa_items_system.txt`：QA 清洗脚本使用的系统提示词
 
 ### 数据目录（`data/` 下）
 
@@ -165,6 +167,19 @@ python process_email_qa_async.py
   "code_snippet": "代码片段或关键命令"
 }
 ```
+
+### 步骤 3C：对 QA 结果做二次清洗（可选，但很推荐）
+
+无论你是用 3A 还是 3B 得到的 JSONL，都可以再跑一遍清洗脚本，让内容更适合直接进知识库（统一口吻、去隐私链接）：
+
+```bash
+python clean_qa_jsonl.py \
+  --src data/qa_output/email_qa.jsonl \
+  --dst data/qa_output/temp/Enzi'sknowledge.jsonl
+```
+
+- 输入：任意符合 `file/category/model/issue/resolution/code_snippet` 结构的 JSONL  
+- 输出：结构基本不变，但 `issue / resolution / code_snippet` 会按提示词规则重写、脱敏。  
 
 ### 步骤 4：导出为 CSV（可选）
 
