@@ -1,5 +1,7 @@
 # Email2QA - 从 Foxmail 导出邮件到知识库 QA 的完整解决方案
 
+[中文](README.md) · [English](README_EN.md) · [日本語](README_JA.md)
+
 ![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Status](https://img.shields.io/badge/status-alpha-orange)
 
 ## 🚀 项目背景
