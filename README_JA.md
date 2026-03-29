@@ -49,7 +49,7 @@ chmod +x tools/Toolforeml2QA/batch-eml2md.sh
 ./tools/Toolforeml2QA/batch-eml2md.sh data/email_input data/md_from_eml
 ```
 
-3. HTML 本文には **`pandoc`** が必要。その後は脱敏→QA。フォルダ説明は **[data/README.md](data/README.md)**。
+3. HTML 本文には **`pandoc`** が必要。その後は脱敏→QA。`data/` パスとスクリプトの詳細は **[README.md](README.md)**（中国語・主ドキュメント）を参照。
 
 > **実メールなしで流れを試す場合**：**`data/email_input_demo/`**（架空の `.eml` 20 通）。氏名・ドメイン・SN・商取引の記述はテスト用のプレースホルダであり、実在の顧客とは対応しません。データの扱いと匿名化の考え方は **[data/email_input_demo/README.md](data/email_input_demo/README.md)** を参照。出力は `data/md_from_eml_demo` など別ディレクトリを推奨。
 

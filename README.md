@@ -24,7 +24,7 @@
 | 🧩 **格式保真** | HTML 正文经 **pandoc** 转 Markdown，尽量保留代码块、列表与结构（见 `tools/Toolforeml2QA/`）。 |
 | 🧠 **面向邮件的 Prompt** | `prompts/distill_emails_system.txt` 等针对技术支持邮件场景调优，输出统一 QA 字段。 |
 | ⚡ **断点续跑** | `scripts/process_email_qa.py` 会跳过 JSONL 中已出现过的 `file`；`scrub` 支持跳过已生成目标文件（`--overwrite` 可强刷）。 |
-| 📁 **目录约定清晰** | **`.eml` 固定放 `data/email_input/`**，其余阶段见下表与 [data/README.md](data/README.md)。 |
+| 📁 **目录约定清晰** | **`.eml` 固定放 `data/email_input/`**，其余路径见下文「数据目录」一节。 |
 
 ---
 
@@ -104,35 +104,66 @@ python scripts/clean_qa_jsonl.py --src data/qa_output/email_qa.jsonl --dst data/
 python scripts/export_jsonl_to_csv.py --src data/qa_output/email_qa.jsonl --dst data/qa_output/email_qa.csv
 ```
 
-更细的步骤说明见 **[data/README.md](data/README.md)**；EML 工具链见 **[tools/Toolforeml2QA/README.md](tools/Toolforeml2QA/README.md)**；仓库布局见 **[docs/STRUCTURE.md](docs/STRUCTURE.md)**。
+EML 工具链见 **[tools/Toolforeml2QA/README.md](tools/Toolforeml2QA/README.md)**；仓库布局见 **[docs/STRUCTURE.md](docs/STRUCTURE.md)**。
 
 ---
 
-## 📁 `data/` 目录与敏感程度
+## 📁 数据目录（`data/`）
 
-| 路径 | 用途 | 敏感程度 |
-|------|------|:--------:|
-| `data/email_input/` | 📥 原始 `.eml` | 🔴 高 |
-| `data/md_from_eml/` | 📝 转换后的 MD（仍含隐私） | 🟠 中 |
-| `data/md_full/` | ✨ 脱敏后的 MD（可进入下游 API） | 🟢 低 |
-| `data/qa_output/` | 💎 QA 结果（JSONL 等） | 🟢 低 |
+本地邮件与中间产物放在 `data/` 下；**默认不提交**敏感内容到 Git（见 `.gitignore`）。**虚构演示**样本（`email_input_demo/`）可随仓库提交。
 
-以上目录默认**不提交**敏感内容到 Git（见 `.gitignore`）。
+### 流水线目录（按处理顺序）
 
----
+| 路径 | 你要做的事 | 敏感程度 |
+|------|------------|:--------:|
+| `data/email_input/` | 放入 Foxmail 等导出的 **`.eml`**（可建子目录分类；批量转换会递归扫描） | 🔴 高 |
+| `data/md_from_eml/` | 由 `tools/Toolforeml2QA` 从 `.eml` 转出的**长 Markdown**（工具生成，勿手抄） | 🟠 中 |
+| `data/md_full/` | 由 `scrub_markdown_pii.py` 脱敏后的 MD，再给 `process_email_qa.py` 使用 | 🟢 低 |
+| `data/qa_output/` | QA 抽取结果（如 `email_qa.jsonl`） | 🟢 低 |
 
-## 🧰 主要脚本与 `prompts/`
+### 示例与演示（可随仓库提交）
 
-所有 Python 入口在 **`scripts/`**（请在**仓库根目录**执行 `python scripts/…`）。
-
-| 脚本 | 作用 |
+| 路径 | 说明 |
 |------|------|
-| `scripts/scrub_markdown_pii.py` | MD→MD 脱敏（`prompts/scrub_md_pii_system.txt`） |
-| `scripts/process_email_qa.py` | 从 `data/md_full/` 抽取 QA（单线程、可续跑；支持 `--input-dir` / `--output` / `--limit`） |
-| `scripts/clean_qa_jsonl.py` | QA JSONL 二次清洗 |
-| `scripts/export_jsonl_to_csv.py` | JSONL → CSV |
+| `data/email_input_demo/` | **虚构、去标识化** `.eml`（当前 20 封）。构造原则与安全说明见 [data/email_input_demo/README.md](data/email_input_demo/README.md)。 |
 
-**Prompt**：`prompts/distill_emails_system.txt`、`prompts/scrub_md_pii_system.txt`、`prompts/clean_qa_items_system.txt`。
+首次使用若缺少流水线目录：
+
+```bash
+mkdir -p data/email_input data/md_from_eml data/md_full data/qa_output
+```
+
+**与 `tools/Toolforeml2QA` 的配合**：邮件正文为 **HTML** 时需要系统已安装 **`pandoc`** 并在 `PATH` 中；纯文本正文不依赖 pandoc。转换命令见上文「快速开始」第一步。
+
+---
+
+## 🧰 脚本与参数（`scripts/`）
+
+在仓库**根目录**执行 `python scripts/…`。脚本通过 `PROJECT_ROOT` 定位仓库根，读取 `prompts/`、`secrets/`、`data/`。
+
+| 脚本 | 作用 | 常用参数 |
+|------|------|----------|
+| `scripts/scrub_markdown_pii.py` | MD→MD 脱敏（`prompts/scrub_md_pii_system.txt`） | `--input-dir` / `--output-dir`、`--overwrite`、`--limit` |
+| `scripts/process_email_qa.py` | 从 `data/md_full/` 抽取 QA（单线程、可续跑） | `--input-dir` / `--output`、`--model`、`--limit` |
+| `scripts/clean_qa_jsonl.py` | QA JSONL 二次清洗 | `--src` / `--dst`、`--model`、`--limit`、`--no-resume` |
+| `scripts/export_jsonl_to_csv.py` | JSONL → CSV | `--src` / `--dst` |
+
+查看全部参数：
+
+```bash
+python scripts/scrub_markdown_pii.py --help
+python scripts/process_email_qa.py --help
+python scripts/clean_qa_jsonl.py --help
+python scripts/export_jsonl_to_csv.py --help
+```
+
+**典型顺序**：`scrub_markdown_pii` → `process_email_qa` →（可选）`clean_qa_jsonl` → `export_jsonl_to_csv`（与「快速开始」一致）。
+
+**试跑（省 API）**：如 `process_email_qa.py --limit 3`、`scrub_markdown_pii.py --limit 3`、`clean_qa_jsonl.py --limit 20`。
+
+**全量重跑**：QA 蒸馏请备份或删除 `data/qa_output/email_qa.jsonl` 后再运行 `process_email_qa.py`；清洗可用 `clean_qa_jsonl.py --no-resume` 覆盖 `--dst`。
+
+**Prompt 文件**：`prompts/distill_emails_system.txt`、`prompts/scrub_md_pii_system.txt`、`prompts/clean_qa_items_system.txt`。
 
 ---
 
@@ -165,7 +196,7 @@ Email2QA/
 ├── tools/Toolforeml2QA/     # .eml → .md（pandoc），可单独拷贝使用
 ├── prompts/                 # 各阶段系统提示词
 ├── secrets/                 # 本地密钥（勿提交真实 key，见 secrets/README.md）
-└── data/                    # 邮件与中间产物（默认 gitignore，见 data/README.md）
+└── data/                    # 邮件与中间产物（默认 gitignore；见上文「数据目录」）
 ```
 
 ---

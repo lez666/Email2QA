@@ -50,7 +50,7 @@ chmod +x tools/Toolforeml2QA/batch-eml2md.sh
 ```
 
 3. HTML bodies need **`pandoc`** on `PATH`. Then run scrub → QA as in the sections below.  
-**Folder layout:** see **[data/README.md](data/README.md)**.
+**Data paths & scripts:** see **[README.md](README.md)** (primary documentation, Chinese).
 
 > **Demo the pipeline without real mail?** Use **`data/email_input_demo/`** (20 fictional `.eml` files). Names, domains, serials, and “business noise” are synthetic placeholders for testing and public demos—**not** real customers. De-identification rationale and safety notes: **[data/email_input_demo/README.md](data/email_input_demo/README.md)**. Use a separate output directory (e.g. `data/md_from_eml_demo`).
 

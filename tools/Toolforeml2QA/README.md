@@ -19,7 +19,7 @@ chmod +x tools/Toolforeml2QA/batch-eml2md.sh
 ./tools/Toolforeml2QA/batch-eml2md.sh data/email_input data/md_from_eml
 ```
 
-更完整的「新手教程」见仓库根目录 **README.md** 与 **data/README.md**。
+更完整的「新手教程」与 `data/` 目录说明见仓库根目录 **[README.md](../../README.md)**。
 
 ## 依赖
 
