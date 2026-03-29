@@ -1,197 +1,160 @@
-# Email2QA - 从 Foxmail 导出邮件到知识库 QA 的完整解决方案
+<div align="center">
 
-[中文](README.md) · [English](README_EN.md) · [日本語](README_JA.md)
+# 📧 Email2QA
 
-![Python](https://img.shields.io/badge/python-3.10%2B-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![Status](https://img.shields.io/badge/status-alpha-orange)
+**从 Foxmail 导出邮件到知识库 QA 的自动化流水线**
 
-## 项目背景与目的
+*转换 → 脱敏 → 蒸馏：把凌乱、多语种、含隐私的 `.eml`，变成可入库的结构化 QA。*
 
-技术支持场景下，历史邮件体量大、语种杂、隐私敏感。本项目将流程拆成三段：
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-alpha-orange)](https://github.com/lez666/Email2QA)
 
-1. **格式转换（无 LLM）**：`.eml` → 长 Markdown（依赖 **pandoc**，见下节 `Toolforeml2QA`）。
-2. **深度脱敏（MD→MD）**：`scrub_markdown_pii.py` **默认与 QA 抽取相同**，使用 **OpenAI 官方 API**（`OPENAI_API_KEY` / `secrets/openai_key.txt`）；若在内网 GPU 上跑本地兼容服务，只需设置 `OPENAI_BASE_URL` 与 `OPENAI_MODEL`（详见 [`secrets/README.md`](secrets/README.md)）。
-3. **知识蒸馏（MD→结构化 QA）**：对已脱敏的 Markdown 调用 API，结合 `prompts/distill_emails_system.txt` 输出 JSONL，可选再跑 QA 清洗与 CSV 导出。
+[简体中文](README.md) · [English](README_EN.md) · [日本語](README_JA.md)
 
-**密钥与端点统一放在 `secrets/`（见该目录 README）；脱敏与 QA 默认共用同一套 `openai_key.txt`，无需单独「离线 key」文件。**
-
----
-
-## 推荐流水线（总览）
-
-```
-Foxmail 等导出的 .eml
-    ↓
-Toolforeml2QA（Python + pandoc，HTML 正文转 Markdown）
-    ↓
-data/md_from_eml/     ← 长 Markdown（可先做邮箱等简单处理）
-    ↓
-scrub_markdown_pii.py（MD→MD 脱敏，默认线上 OpenAI，可改为本机端点）
-    ↓
-data/md_full/         ← 仅此处及之后的文件适合发往公网 API
-    ↓
-process_email_qa.py（单线程，顺序处理）
-    ↓
-data/qa_output/email_qa.jsonl
-    ↓
-[可选] clean_qa_jsonl.py → export_jsonl_to_csv.py
-```
+</div>
 
 ---
 
-## 新手教程：`.eml` 放哪、接下来怎么做
+## 🌟 核心亮点
 
-### 第一步：放好 `.eml` 文件
+| | |
+| :--- | :--- |
+| 🛡️ **隐私可控** | 脱敏步骤 **兼容 OpenAI 接口**：可接 **内网 vLLM / Ollama**（`OPENAI_BASE_URL`），敏感原文不必出内网；也支持默认走云端 API，按合规自选。 |
+| 🧩 **格式保真** | HTML 正文经 **pandoc** 转 Markdown，尽量保留代码块、列表与结构（见 `Toolforeml2QA/`）。 |
+| 🧠 **面向邮件的 Prompt** | `prompts/distill_emails_system.txt` 等针对技术支持邮件场景调优，输出统一 QA 字段。 |
+| ⚡ **断点续跑** | `process_email_qa.py` 会跳过 JSONL 中已出现过的 `file`；`scrub` 支持跳过已生成目标文件（`--overwrite` 可强刷）。 |
+| 📁 **目录约定清晰** | **`.eml` 固定放 `data/email_input/`**，其余阶段见下表与 [data/README.md](data/README.md)。 |
 
-1. 在项目中使用固定目录：**`data/email_input/`**（没有就新建）。
-2. 把 Foxmail 等软件**导出**的 `.eml` **全部复制/移动到这个文件夹里**（可以按主题再分子文件夹，批量工具会递归查找）。
-3. 说明：原始 `.eml` 只放在这里即可，**不要**和后面的 `.md` 混在一起，方便对照教程排查问题。
+---
 
-### 第二步：转成 Markdown（无 LLM）
+## 🔄 处理工作流
 
-在项目**根目录**（与 `Toolforeml2QA/`、`scrub_markdown_pii.py` 同级）打开终端：
-
-```bash
-# 建议先建好输出目录（没有会自动创建，写上更直观）
-mkdir -p data/email_input data/md_from_eml
-
-# 批量：左边是放 .eml 的目录，右边是输出的 .md 目录
-chmod +x Toolforeml2QA/batch-eml2md.sh
-./Toolforeml2QA/batch-eml2md.sh data/email_input data/md_from_eml
+```mermaid
+flowchart LR
+    A["email_input .eml"] --> B["Toolforeml2QA Pandoc"]
+    B --> C["md_from_eml"]
+    C --> D["scrub 脱敏"]
+    D --> E["md_full"]
+    E --> F["process_email_qa"]
+    F --> G["qa_output JSONL"]
 ```
 
-- 邮件正文是 **HTML** 时，需要先安装 **`pandoc`** 并保证在终端能执行 `pandoc`。
-- 只想转一封试跑：`python3 Toolforeml2QA/eml2md.py data/email_input/某封.eml -o data/md_from_eml/某封.md`（详见 [Toolforeml2QA/README.md](Toolforeml2QA/README.md)）。
-- **可选**：去掉签名、转发块（会**直接改** md 目录里的文件）  
-  `python3 Toolforeml2QA/clean_md_signatures.py data/md_from_eml`
-
-### 第三步～第五步：脱敏 → 抽 QA → 导出
-
-配置好 `secrets/openai_key.txt`（或环境变量）后，按下面「配置说明」「使用步骤摘要」依次执行 `scrub_markdown_pii.py`、`process_email_qa.py` 等即可。
-
-**更细的 `data/` 子目录含义**见 **[data/README.md](data/README.md)**。
+> **说明**：脱敏与 QA 默认共用 `secrets/openai_key.txt`；若脱敏走内网模型，请为该步骤配置 `OPENAI_BASE_URL` / `openai_base_url.txt`，避免误将敏感 MD 发到错误端点。详见 [secrets/README.md](secrets/README.md)。
 
 ---
 
-## Toolforeml2QA（.eml → .md）
+## 🚀 快速开始
 
-目录 **`Toolforeml2QA/`** 为独立小工具。邮件正文为 **HTML** 时，会通过 **pandoc** 转为 GitHub 风格 Markdown。完整选项见 [Toolforeml2QA/README.md](Toolforeml2QA/README.md)。
-
-与本教程配套时：**输入目录用 `data/email_input/`，输出目录用 `data/md_from_eml/`**。
-
----
-
-## 目录结构（代码与数据）
-
-### 根目录脚本
-
-| 脚本 | 作用 |
-|------|------|
-| **`scrub_markdown_pii.py`** | MD→MD 脱敏（`prompts/scrub_md_pii_system.txt`；默认与 `process_email_qa` 共用 API 配置） |
-| **`process_email_qa.py`** | 从 `data/md_full/` 抽取 QA，**单线程**，支持按已输出记录断点续跑 |
-| **`clean_qa_jsonl.py`** | 对已生成的 QA JSONL 二次清洗（口吻与链接等） |
-| **`export_jsonl_to_csv.py`** | JSONL → CSV |
-
-### `prompts/`
-
-- **`distill_emails_system.txt`**：邮件线程 → 结构化 QA 的共享系统提示词（线上蒸馏）。
-- **`scrub_md_pii_system.txt`**：MD 脱敏用系统提示词。
-- **`clean_qa_items_system.txt`**：`clean_qa_jsonl.py` 使用的系统提示词。
-
-### `data/`（默认约定，敏感内容多在 `.gitignore` 中；**说明见 [data/README.md](data/README.md)**）
-
-| 路径 | 含义 |
-|------|------|
-| **`email_input/`** | **请你把导出的 `.eml` 放在这里**（教程起点） |
-| `md_from_eml/` | `Toolforeml2QA` 从 `.eml` 转出的长 Markdown（尚未深度脱敏） |
-| `md_full/` | 脱敏后的 Markdown，再给 `process_email_qa.py` 使用 |
-| `qa_output/email_qa.jsonl` | QA 抽取结果 |
-
-### `secrets/`（密钥目录，**真实 key 勿提交**）
-
-**完整说明与示例模板见仓库内 [`secrets/README.md`](secrets/README.md)。** 克隆后请本地新建 `openai_key.txt` 等文件（可复制同目录下 `*.example.txt` 再改名、改内容）。
-
-| 文件 | 用途 |
-|------|------|
-| `openai_key.txt` | OpenAI 兼容 API Key（`process_email_qa`、`scrub_markdown_pii`、`clean_qa_jsonl` 等共用） |
-| `openai_base_url.txt` | **可选**，自定义 Base URL（代理 / 本机 vLLM 等）；也可用 `OPENAI_BASE_URL` |
-
-环境变量：`OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL` 等（见 [`secrets/README.md`](secrets/README.md)）。
-
----
-
-## 环境依赖
-
-建议使用 **Python 3.10+**。
+### 1️⃣ 环境准备
 
 ```bash
 pip install -r requirements.txt
 ```
 
-格式转换阶段另需系统安装 **pandoc**（仅 HTML 邮件需要）。
+- **pandoc**（邮件正文为 HTML 时需要）：  
+  `sudo apt install pandoc`（Ubuntu） / `brew install pandoc`（macOS）
 
----
+### 2️⃣ 放入原始邮件
 
-## 配置说明
+将 Foxmail 等导出的 **`.eml`** 放入：
 
-### MD 脱敏（`scrub_markdown_pii.py`）
+```text
+data/email_input/
+```
 
-**默认**：与下面 QA 抽取相同，使用 **OpenAI 官方 API**（未设置 `OPENAI_BASE_URL` 时）。
+（可建子目录分类；没有该文件夹请自行 `mkdir -p data/email_input`。）
+
+### 3️⃣ 三步流水线
+
+**第一步 — EML → Markdown（无 LLM）**
 
 ```bash
-export OPENAI_API_KEY="你的_key"   # 或写入 secrets/openai_key.txt
-# export OPENAI_MODEL="gpt-5.4"    # 可选，与 process_email_qa 一致
-export SCRUB_CONCURRENCY="4"      # 可选，并发数
+mkdir -p data/email_input data/md_from_eml
+chmod +x Toolforeml2QA/batch-eml2md.sh
+./Toolforeml2QA/batch-eml2md.sh data/email_input data/md_from_eml
+```
+
+**第二步 — MD 深度脱敏（🛡️ 隐私关键步骤）**
+
+```bash
+# 先配置 secrets/openai_key.txt 或 export OPENAI_API_KEY=...
 python scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_full
 ```
 
-**改用本机 vLLM / 内网 OpenAI 兼容服务**时，增加端点与模型名即可（Key 仍可用同一 `openai_key.txt`）：
+💡 **只想在内网脱敏？** 将 `OPENAI_BASE_URL` 指向本地兼容服务（或写入 `secrets/openai_base_url.txt` 一行），并设置 `OPENAI_MODEL` 为本地模型 ID。示例：
 
 ```bash
 export OPENAI_BASE_URL="http://127.0.0.1:8000/v1"
-export OPENAI_API_KEY="local"           # 按你的本地服务要求填写
-export OPENAI_MODEL="你的本地模型 ID"
+export OPENAI_MODEL="你的本地模型"
 python scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_full
 ```
 
-也可把 Base URL 写入 `secrets/openai_base_url.txt`（一行）。详见 [`secrets/README.md`](secrets/README.md)。
-
-### QA 抽取（`process_email_qa.py`）
+**第三步 — QA 蒸馏（MD → JSONL）**
 
 ```bash
-export OPENAI_API_KEY="你的_key"
-export OPENAI_MODEL="gpt-4.1"   # 可选，按你的服务商填写
 python process_email_qa.py
 ```
 
-或写入 `secrets/openai_key.txt`（第一行非注释非空即为 Key，**不限定 `sk-` 前缀**，便于兼容代理网关）。若使用自定义端点，同样可设置 `OPENAI_BASE_URL` 或 `secrets/openai_base_url.txt`。
+**可选 — 二次清洗与 Excel**
+
+```bash
+python clean_qa_jsonl.py --src data/qa_output/email_qa.jsonl --dst data/qa_output/email_qa_cleaned.jsonl
+python export_jsonl_to_csv.py --src data/qa_output/email_qa.jsonl --dst data/qa_output/email_qa.csv
+```
+
+更细的步骤说明见 **[data/README.md](data/README.md)**；工具链选项见 **[Toolforeml2QA/README.md](Toolforeml2QA/README.md)**。
 
 ---
 
-## 使用步骤摘要（对应上方「新手教程」）
+## 📁 `data/` 目录与敏感程度
 
-1. **`.eml` → `data/email_input/`** → 用 **`Toolforeml2QA`** 批量转为 **`data/md_from_eml/`**。
-2. **`python scrub_markdown_pii.py`** → 输出 **`data/md_full/`**（内网脱敏可设 `OPENAI_BASE_URL`）。
-3. **`python process_email_qa.py`** → **`data/qa_output/email_qa.jsonl`**（支持按已处理文件名续跑）。
-4. （可选）**`clean_qa_jsonl.py`** → **`export_jsonl_to_csv.py`**。
+| 路径 | 用途 | 敏感程度 |
+|------|------|:--------:|
+| `data/email_input/` | 📥 原始 `.eml` | 🔴 高 |
+| `data/md_from_eml/` | 📝 转换后的 MD（仍含隐私） | 🟠 中 |
+| `data/md_full/` | ✨ 脱敏后的 MD（可进入下游 API） | 🟢 低 |
+| `data/qa_output/` | 💎 QA 结果（JSONL 等） | 🟢 低 |
 
-**输出 JSONL 每行字段示例**：`file`、`category`、`model`、`issue`、`resolution`、`code_snippet`（与 `distill_emails_system.txt` 中约定一致）。
-
----
-
-## 数据与代码分离约定
-
-- 代码放在项目根目录；**数据只放在 `data/`** 下对应子目录。
-- **不要**将未脱敏的 `md_from_eml` 直接提交到公开仓库；`secrets/` 始终本地保存。
+以上目录默认**不提交**敏感内容到 Git（见 `.gitignore`）。
 
 ---
 
-## 注意事项
+## 🧰 主要脚本与 `prompts/`
 
-1. **密钥与端点**：脱敏与 QA 默认共用 `openai_key.txt`；仅在内网部署本地推理时，为脱敏步骤设置 `OPENAI_BASE_URL`（及对应模型名），避免误把未脱敏数据发往错误的端点。
-2. **`process_email_qa.py`** 若输出 JSONL 已存在，会读取其中已出现的 `file` 并跳过对应 Markdown，适合长时间任务中断后续跑；若要全量重跑，请先删除或移走该 JSONL。
+| 脚本 | 作用 |
+|------|------|
+| `scrub_markdown_pii.py` | MD→MD 脱敏（`prompts/scrub_md_pii_system.txt`） |
+| `process_email_qa.py` | 从 `data/md_full/` 抽取 QA（单线程、可续跑） |
+| `clean_qa_jsonl.py` | QA JSONL 二次清洗 |
+| `export_jsonl_to_csv.py` | JSONL → CSV |
+
+**Prompt 文件**：`distill_emails_system.txt`、`scrub_md_pii_system.txt`、`clean_qa_items_system.txt`。
 
 ---
 
-## 许可证
+## ⚙️ 配置与进阶
 
-本项目采用 **MIT License** 开源协议。你可以在遵守 MIT 协议的前提下自由使用、修改和分发本项目代码（包括商业用途）。
+- **密钥**：在 `secrets/` 下按 [secrets/README.md](secrets/README.md) 创建 `openai_key.txt`（可复制 `*.example.txt`）。支持任意 **OpenAI 兼容**网关。
+- **自定义端点**：`OPENAI_BASE_URL` 或 `secrets/openai_base_url.txt`（代理 / 本机 vLLM）。
+- **模型名**：`OPENAI_MODEL`（脱敏与 QA 脚本共用该变量约定）。
+- **脱敏并发**：`SCRUB_CONCURRENCY`（默认 4）。
+
+---
+
+## ⚠️ 注意事项
+
+1. 脱敏与 QA **默认共用**同一套 Key；若脱敏只走内网，请显式设置 `OPENAI_BASE_URL`，避免误连公网。
+2. `process_email_qa.py` 输出已存在时会按 `file` 字段跳过已处理邮件；全量重跑请先备份或删除原 JSONL。
+
+---
+
+## 🤝 贡献与反馈
+
+若本仓库对你有帮助，欢迎 **Star 🌟**；Bug 与建议请发 **Issue**，改进工具链或 Prompt 欢迎 **Pull Request**。
+
+---
+
+## ⚖️ 许可证
+
+本项目基于 **[MIT License](LICENSE)** 授权。
