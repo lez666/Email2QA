@@ -15,9 +15,6 @@ __pycache__/
 data/qa_output/
 data/processed_files.log
 
-# 历史 demo 导出（Unitree 知识蒸馏示例 JSONL/CSV，可公开）
-# data/1/、data/2/、旧名 data/3/ 已废弃或已改名
-
 # 输入数据（通常不提交，除非是示例）
 data/email_input/
 # 工具链产出的长 Markdown（未脱敏 / 已脱敏均建议本地保留）

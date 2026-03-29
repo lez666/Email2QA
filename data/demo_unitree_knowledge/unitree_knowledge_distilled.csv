@@ -1,3 +1,0 @@
-﻿"category","model","issue","resolution","code_snippet"
-"sensor","L1 LiDAR","在使用 Unitree 4D L1 LiDAR 连接时，发现通过 UDP 端口连接不稳定，想知道如何更好地连接该设备？","请通过串口 (Serial Port) 连接 Unitree 4D L1 LiDAR，而不是使用 UDP 端口。有关 L1 LiDAR 的详细说明和故障排除提示，请访问我们的下载中心 [Unitree Download Center](https://www.unitree.com/download)。",""
-"hardware","L1 LiDAR","在测试三台 mid360 LiDAR 时，发现虽然制造商的测试结果显示 LiDAR 本身没有问题，但仍然存在异常共振现象。这可能是减震设计的问题。该怎么处理？","请先检查 LiDAR 的减震设计，确认是否存在设计缺陷。然后，进行进一步的测试以确定共振的具体原因。如果需要，可以考虑更换减震组件或进行设计优化。最后，将三台 LiDAR 发送回公司进行详细检查。",""

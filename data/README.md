@@ -17,7 +17,6 @@
 | 路径 | 说明 |
 |------|------|
 | **`email_input_demo/`** | **虚构、去标识化** `.eml`（当前 20 封），仅用于测试与展示流程。构造原则见 [email_input_demo/README.md](email_input_demo/README.md)。 |
-| **`demo_unitree_knowledge/`** | （可选）历史示例：`unitree_knowledge_distilled.jsonl` / `.csv`，与流水线目录独立，仅作参考。 |
 
 首次使用若缺少流水线目录，在项目根执行：
 
