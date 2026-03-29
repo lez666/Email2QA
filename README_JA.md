@@ -54,13 +54,16 @@ data/qa_output/email_qa.jsonl
 | `clean_qa_jsonl.py` | QA JSONL の二次クレンジング |
 | `export_jsonl_to_csv.py` | JSONL → CSV |
 
-### `secrets/`（Git に含めない）
+### `secrets/`（実キーはコミットしない・**詳細は [`secrets/README.md`](secrets/README.md)**）
+
+クローン後、`*.example.txt` を `*.txt` にコピーして記入。一覧とルールは `secrets/README.md` を参照。
 
 | ファイル | 用途 |
 |---------|------|
-| `offline_openai_api_key.txt` | オフライン推論用キー／トークン |
-| `offline_openai_base_url.txt` | 任意（例：`http://127.0.0.1:8000/v1`） |
+| `offline_openai_api_key.txt` | オフライン脱敏サービス |
+| `offline_openai_base_url.txt` | 任意（OpenAI 互換 Base URL） |
 | `openai_key.txt` | **オンライン** API キー |
+| `google_api_key.txt` | Gemini（`process_email_qa_gemini.py`） |
 
 環境変数 `OFFLINE_OPENAI_*` / `OPENAI_API_KEY` 等で上書き可能です。
 

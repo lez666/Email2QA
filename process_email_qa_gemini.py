@@ -8,7 +8,7 @@ from google import genai
 使用 Gemini（例如 gmini3 / gemini-1.5-flash）从邮件 markdown 中抽取 QA。
 
 用法（在项目根目录 /home/wasabi/email-to-QA）：
-    # 推荐：把 key 放到 secrets/google_api_key.txt（已经为你写入了当前 key）
+    # 推荐：把 key 放到 secrets/google_api_key.txt（见 secrets/README.md）
     # 或者：
     export GOOGLE_API_KEY="你的_gemini_api_key"
 

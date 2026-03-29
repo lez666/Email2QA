@@ -60,13 +60,16 @@ Folder **`Toolforeml2QA/`** is self-contained. For HTML parts, **`pandoc`** must
 - `scrub_md_pii_system.txt` — offline scrub.
 - `clean_qa_items_system.txt` — `clean_qa_jsonl.py`.
 
-### `secrets/` (never commit)
+### `secrets/` (real keys stay local — **see [`secrets/README.md`](secrets/README.md)**)
+
+After clone, copy `*.example.txt` → `*.txt` and fill in. Full table and rules are in `secrets/README.md`.
 
 | File | Purpose |
 |------|---------|
-| `offline_openai_api_key.txt` | Offline service key/token (one line; `#` comments OK) |
-| `offline_openai_base_url.txt` | Optional, e.g. `http://127.0.0.1:8000/v1` |
+| `offline_openai_api_key.txt` | Offline scrub service |
+| `offline_openai_base_url.txt` | Optional OpenAI-compatible base URL |
 | `openai_key.txt` | **Online** API key |
+| `google_api_key.txt` | Gemini (`process_email_qa_gemini.py`) |
 
 Env overrides: `OFFLINE_OPENAI_*`, `OPENAI_API_KEY`, `OPENAI_MODEL`, etc.
 

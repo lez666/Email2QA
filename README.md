@@ -72,13 +72,16 @@ data/qa_output/email_qa.jsonl
 | `md_full/` | 离线脱敏后的 Markdown，**仅本目录内容建议接入线上 API** |
 | `qa_output/email_qa.jsonl` | QA 抽取结果 |
 
-### `secrets/`（勿提交）
+### `secrets/`（密钥目录，**真实 key 勿提交**）
+
+**完整说明与示例模板见仓库内 [`secrets/README.md`](secrets/README.md)。** 克隆后请本地新建 `openai_key.txt` 等文件（可复制同目录下 `*.example.txt` 再改名、改内容）。
 
 | 文件 | 用途 |
 |------|------|
 | `offline_openai_api_key.txt` | 离线服务 API Key 或 token（一行；可用 `#` 写注释） |
 | `offline_openai_base_url.txt` | 可选，例如 `http://127.0.0.1:8000/v1` |
 | `openai_key.txt` | **线上** API Key（一行；可用 `#` 注释） |
+| `google_api_key.txt` | Gemini（`process_email_qa_gemini.py`） |
 
 也可用环境变量覆盖：`OFFLINE_OPENAI_API_KEY`、`OFFLINE_OPENAI_BASE_URL`、`OFFLINE_OPENAI_MODEL`、`OPENAI_API_KEY`、`OPENAI_MODEL` 等。
 

@@ -1,5 +1,7 @@
-# 本地 API Key（不应提交）
-secrets/
+# 本地 API Key：真实密钥勿提交；说明与 *.example.txt 模板见仓库内 secrets/README.md
+secrets/*
+!secrets/README.md
+!secrets/*.example.txt
 
 # 编辑器遗留的无标题草稿
 /Untitled
