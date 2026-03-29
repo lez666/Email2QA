@@ -7,8 +7,6 @@ __pycache__/
 
 # GPT-5 处理结果（不公开到 GitHub）
 data/qa_output/
-data/unitree_knowledge_distilled.jsonl
-data/unitree_knowledge_distilled.csv
 data/processed_files.log
 
 # 历史实验目录（data/3/ 是 GPT-4 的 demo 结果，可以公开）
@@ -16,6 +14,8 @@ data/processed_files.log
 
 # 输入数据（通常不提交，除非是示例）
 data/email_input/
+# 工具链产出的长 Markdown（未脱敏 / 已脱敏均建议本地保留）
+data/md_from_eml/
 data/md_full/
 
 # 大规模原始邮件 markdown（本地使用，不推到 GitHub）

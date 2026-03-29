@@ -20,7 +20,7 @@ from openai import OpenAI
   # 建议清洗脚本使用 GPT-4 族模型（更便宜），如 gpt-4.1-mini
   export OPENAI_MODEL="gpt-4.1-mini"
   python clean_qa_jsonl.py \\
-      --src data/qa_output/temp/email_qasingle\\ thread.jsonl \\
+      --src data/qa_output/email_qa.jsonl \\
       --dst data/qa_output/temp/Enzi'sknowledge.jsonl
 """
 
@@ -59,12 +59,12 @@ def load_api_key() -> str:
         content = key_path.read_text(encoding="utf-8")
         for line in content.splitlines():
             line = line.strip()
-            if line and not line.startswith("#") and line.startswith("sk-"):
+            if line and not line.startswith("#"):
                 return line
 
     raise RuntimeError(
         "未找到 OPENAI_API_KEY，请正确配置。"
-        "请设置环境变量 OPENAI_API_KEY 或在 secrets/openai_key.txt 中填写真实的 API key（跳过注释行）。"
+        "请设置环境变量 OPENAI_API_KEY 或在 secrets/openai_key.txt 中填写一行 API key（可配合 # 注释）。"
     )
 
 

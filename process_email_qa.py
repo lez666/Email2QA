@@ -15,7 +15,7 @@ from openai import OpenAI, APIConnectionError
    python process_email_qa.py
 
 3. 数据目录约定（所有输入/输出都在 data/ 下）：
-   - 输入：遍历 ./data/md_full 下的所有 .md 邮件文件（这些是未经过 LLM 处理的原始 Markdown）
+   - 输入：遍历 ./data/md_full 下的所有 .md（应已完成离线脱敏，可安全发往线上 API）
    - 输出：./data/qa_output/email_qa.jsonl（每行一条 QA 记录，JSON 格式）
 
 你可以之后再把 qa_output/email_qa.jsonl 导入到自己的知识库系统。
@@ -53,10 +53,13 @@ def load_api_key() -> str:
         # 跳过注释行（以 # 开头的行），只读取实际的 key
         for line in content.splitlines():
             line = line.strip()
-            if line and not line.startswith("#") and line.startswith("sk-"):
+            if line and not line.startswith("#"):
                 return line
 
-    raise RuntimeError("未找到 OPENAI_API_KEY，请正确配置。请设置环境变量 OPENAI_API_KEY 或在 secrets/openai_key.txt 中填写真实的 API key（跳过注释行）。")
+    raise RuntimeError(
+        "未找到 OPENAI_API_KEY，请正确配置。请设置环境变量 OPENAI_API_KEY，"
+        "或在 secrets/openai_key.txt 中填写一行 API key（可配合 # 注释）。"
+    )
 
 
 def get_client() -> OpenAI:
@@ -69,19 +72,19 @@ def build_prompt(email_markdown: str, filename: str) -> list:
     构造给 OpenAI 的对话消息，指导模型从邮件线程中抽取 QA。
     返回的是 chat.completions 需要的 messages 列表。
     """
-    # 统一使用 distill_unitree_emails_system.txt 中定义的 schema 与规则，
+    # 统一使用 distill_emails_system.txt 中定义的 schema 与规则，
     # 这样无论是直接处理原始邮件还是 markdown 线程，最终结构都是
     # { "items": [ { "category", "model", "issue", "resolution", "code_snippet" }, ... ] }。
     system_msg = {
         "role": "system",
-        "content": load_prompt("distill_unitree_emails_system.txt"),
+        "content": load_prompt("distill_emails_system.txt"),
     }
 
     user_msg = {
         "role": "user",
         "content": (
             f"下面是一个 Markdown 格式的技术支持邮件线程内容（文件名：{filename}）。"
-            "这些数据是直接从邮件转换而来的原始 Markdown，未经过任何 LLM 处理。\n\n"
+            "这些数据应已在离线环境完成格式转换与隐私脱敏，可发往线上模型做结构化抽取。\n\n"
             "---------------- 原始邮件开始 ----------------\n"
             f"{email_markdown}\n"
             "---------------- 原始邮件结束 ----------------\n\n"
@@ -243,7 +246,7 @@ def process_directory(
                 continue
 
             for qa in qa_items:
-                # 统一为与 distill_unitree_emails.py 相同的字段结构，便于后续合并使用
+                # 统一 QA 字段结构，便于与下游清洗/导出衔接
                 record = {
                     "file": filename,
                     "category": qa.get("category"),
@@ -270,8 +273,7 @@ def main():
     project_root = PROJECT_ROOT
     data_dir = project_root / "data"
     input_dir = data_dir / "md_full"
-    # 与异步版本保持一致，默认输出到 data/qa_output/email_qa.jsonl，
-    # 如果文件已存在会自动做断点续传（不会覆盖旧结果）
+    # 使用单线程版本的文件名，支持断点续传
     output_path = data_dir / "qa_output" / "email_qa.jsonl"
 
     # 如需测试先只跑前 N 个文件，可以把 limit_files 改成一个整数，比如 20

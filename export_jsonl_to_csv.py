@@ -7,12 +7,12 @@ from pathlib import Path
 """
 通用 JSONL → CSV 转换脚本。
 
-默认行为（在项目根目录 /home/wasabi/email-to-QA）：
+默认行为（在项目根目录）：
     python export_jsonl_to_csv.py
 等价于：
     python export_jsonl_to_csv.py \\
-        --src data/unitree_knowledge_distilled.jsonl \\
-        --dst data/unitree_knowledge_distilled.csv
+        --src data/qa_output/email_qa.jsonl \\
+        --dst data/qa_output/email_qa.csv
 
 也可以自定义任意输入/输出路径，例如：
     python export_jsonl_to_csv.py \\
@@ -101,14 +101,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--src",
         type=str,
-        default="data/unitree_knowledge_distilled.jsonl",
-        help="输入 JSONL 文件路径（默认：data/unitree_knowledge_distilled.jsonl）",
+        default="data/qa_output/email_qa.jsonl",
+        help="输入 JSONL 文件路径（默认：data/qa_output/email_qa.jsonl）",
     )
     parser.add_argument(
         "--dst",
         type=str,
-        default="data/unitree_knowledge_distilled.csv",
-        help="输出 CSV 文件路径（默认：data/unitree_knowledge_distilled.csv）",
+        default="data/qa_output/email_qa.csv",
+        help="输出 CSV 文件路径（默认：data/qa_output/email_qa.csv）",
     )
     return parser.parse_args()
 
