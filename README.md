@@ -30,15 +30,11 @@
 
 ## 🔄 处理工作流
 
-```mermaid
-flowchart LR
-    A["email_input .eml"] --> B["Toolforeml2QA Pandoc"]
-    B --> C["md_from_eml"]
-    C --> D["scrub 脱敏"]
-    D --> E["md_full"]
-    E --> F["process_email_qa"]
-    F --> G["qa_output JSONL"]
-```
+<div align="center">
+
+![Email2QA 处理工作流：从 email_input 经 Pandoc、脱敏、QA 蒸馏到 qa_output](logicpic.png)
+
+</div>
 
 > **说明**：脱敏与 QA 默认共用 `secrets/openai_key.txt`；若脱敏走内网模型，请为该步骤配置 `OPENAI_BASE_URL` / `openai_base_url.txt`，避免误将敏感 MD 发到错误端点。详见 [secrets/README.md](secrets/README.md)。
 
