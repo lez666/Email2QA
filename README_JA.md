@@ -19,7 +19,7 @@
 ## 推奨パイプライン
 
 ```text
-Foxmail 等の .eml
+.eml を data/email_input/ に置く
     ↓
 Toolforeml2QA（pandoc で HTML→Markdown）
     ↓
@@ -38,9 +38,24 @@ data/qa_output/email_qa.jsonl
 
 ---
 
+## はじめに：`.eml` の置き場所
+
+1. Foxmail 等からエクスポートした **`.eml` を `data/email_input/` に置く**（なければ作成）。サブフォルダ可。
+2. **プロジェクトルート**で：
+
+```bash
+mkdir -p data/email_input data/md_from_eml
+chmod +x Toolforeml2QA/batch-eml2md.sh
+./Toolforeml2QA/batch-eml2md.sh data/email_input data/md_from_eml
+```
+
+3. HTML 本文には **`pandoc`** が必要。その後は脱敏→QA。フォルダ説明は **[data/README.md](data/README.md)**。
+
+---
+
 ## Toolforeml2QA
 
-**`Toolforeml2QA/`** は単体で動くツールです。HTML 本文には **pandoc** が必要です。詳細は [Toolforeml2QA/README.md](Toolforeml2QA/README.md)。バッチ出力は通常 **`data/md_from_eml/`** に向けます。
+**`Toolforeml2QA/`** は単体で動くツールです。HTML 本文には **pandoc** が必要です。本リポジトリでは **入力 `data/email_input/`、出力 `data/md_from_eml/`** を推奨。詳細は [Toolforeml2QA/README.md](Toolforeml2QA/README.md)。
 
 ---
 

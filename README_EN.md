@@ -19,7 +19,7 @@ Keys live under `secrets/`; scrub and QA **share** `openai_key.txt` by default.
 ## End-to-end pipeline
 
 ```text
-.eml from Foxmail
+.eml files → put under data/email_input/
     ↓
 Toolforeml2QA (pandoc for HTML → Markdown)
     ↓
@@ -38,9 +38,25 @@ data/qa_output/email_qa.jsonl
 
 ---
 
+## Quick start: where to put `.eml` files
+
+1. **Drop exported `.eml` files into `data/email_input/`** (create the folder if needed). Subfolders are OK; the batch script scans recursively.
+2. From the **project root**, run:
+
+```bash
+mkdir -p data/email_input data/md_from_eml
+chmod +x Toolforeml2QA/batch-eml2md.sh
+./Toolforeml2QA/batch-eml2md.sh data/email_input data/md_from_eml
+```
+
+3. HTML bodies need **`pandoc`** on `PATH`. Then run scrub → QA as in the sections below.  
+**Folder layout:** see **[data/README.md](data/README.md)**.
+
+---
+
 ## Toolforeml2QA
 
-Folder **`Toolforeml2QA/`** is self-contained. For HTML parts, **`pandoc`** must be on `PATH`. See [Toolforeml2QA/README.md](Toolforeml2QA/README.md). Typical batch output goes to **`data/md_from_eml/`** (or any dir you pass to `--input-dir`).
+Folder **`Toolforeml2QA/`** is self-contained. For HTML parts, **`pandoc`** must be on `PATH`. See [Toolforeml2QA/README.md](Toolforeml2QA/README.md). When using this repo, **input = `data/email_input/`, output = `data/md_from_eml/`**.
 
 ---
 

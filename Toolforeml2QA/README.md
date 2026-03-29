@@ -2,6 +2,25 @@
 
 独立工具集：把 `.eml` 转为 `.md`，可选批量后处理。不依赖本仓库其它路径；将整个目录拷走即可使用。
 
+## 在本仓库中的推荐路径（Email2QA 主项目）
+
+与主仓库 [README](../README.md) 约定一致时：
+
+| 步骤 | 目录 |
+|------|------|
+| 放置 Foxmail 等导出的 `.eml` | **`data/email_input/`** |
+| 批量转换输出的 `.md` | **`data/md_from_eml/`** |
+
+在项目根目录执行示例：
+
+```bash
+mkdir -p data/email_input data/md_from_eml
+chmod +x Toolforeml2QA/batch-eml2md.sh
+./Toolforeml2QA/batch-eml2md.sh data/email_input data/md_from_eml
+```
+
+更完整的「新手教程」见仓库根目录 **README.md** 与 **data/README.md**。
+
 ## 依赖
 
 - Python 3（仅用标准库）

@@ -38,11 +38,45 @@ data/qa_output/email_qa.jsonl
 
 ---
 
+## 新手教程：`.eml` 放哪、接下来怎么做
+
+### 第一步：放好 `.eml` 文件
+
+1. 在项目中使用固定目录：**`data/email_input/`**（没有就新建）。
+2. 把 Foxmail 等软件**导出**的 `.eml` **全部复制/移动到这个文件夹里**（可以按主题再分子文件夹，批量工具会递归查找）。
+3. 说明：原始 `.eml` 只放在这里即可，**不要**和后面的 `.md` 混在一起，方便对照教程排查问题。
+
+### 第二步：转成 Markdown（无 LLM）
+
+在项目**根目录**（与 `Toolforeml2QA/`、`scrub_markdown_pii.py` 同级）打开终端：
+
+```bash
+# 建议先建好输出目录（没有会自动创建，写上更直观）
+mkdir -p data/email_input data/md_from_eml
+
+# 批量：左边是放 .eml 的目录，右边是输出的 .md 目录
+chmod +x Toolforeml2QA/batch-eml2md.sh
+./Toolforeml2QA/batch-eml2md.sh data/email_input data/md_from_eml
+```
+
+- 邮件正文是 **HTML** 时，需要先安装 **`pandoc`** 并保证在终端能执行 `pandoc`。
+- 只想转一封试跑：`python3 Toolforeml2QA/eml2md.py data/email_input/某封.eml -o data/md_from_eml/某封.md`（详见 [Toolforeml2QA/README.md](Toolforeml2QA/README.md)）。
+- **可选**：去掉签名、转发块（会**直接改** md 目录里的文件）  
+  `python3 Toolforeml2QA/clean_md_signatures.py data/md_from_eml`
+
+### 第三步～第五步：脱敏 → 抽 QA → 导出
+
+配置好 `secrets/openai_key.txt`（或环境变量）后，按下面「配置说明」「使用步骤摘要」依次执行 `scrub_markdown_pii.py`、`process_email_qa.py` 等即可。
+
+**更细的 `data/` 子目录含义**见 **[data/README.md](data/README.md)**。
+
+---
+
 ## Toolforeml2QA（.eml → .md）
 
-目录 **`Toolforeml2QA/`** 为独立小工具，可复制到任意机器使用。邮件正文为 **HTML** 时，会通过 **pandoc** 转为 GitHub 风格 Markdown（`pandoc` 需在 `PATH` 中）。详见该目录下的 [Toolforeml2QA/README.md](Toolforeml2QA/README.md)。
+目录 **`Toolforeml2QA/`** 为独立小工具。邮件正文为 **HTML** 时，会通过 **pandoc** 转为 GitHub 风格 Markdown。完整选项见 [Toolforeml2QA/README.md](Toolforeml2QA/README.md)。
 
-典型用法：批量将 `.eml` 输出到 **`data/md_from_eml/`**（目录名可按需调整，与离线脚本 `--input-dir` 一致即可）。
+与本教程配套时：**输入目录用 `data/email_input/`，输出目录用 `data/md_from_eml/`**。
 
 ---
 
@@ -63,12 +97,13 @@ data/qa_output/email_qa.jsonl
 - **`scrub_md_pii_system.txt`**：MD 脱敏用系统提示词。
 - **`clean_qa_items_system.txt`**：`clean_qa_jsonl.py` 使用的系统提示词。
 
-### `data/`（默认约定，均在 `.gitignore` 中忽略敏感内容）
+### `data/`（默认约定，敏感内容多在 `.gitignore` 中；**说明见 [data/README.md](data/README.md)**）
 
 | 路径 | 含义 |
 |------|------|
-| `md_from_eml/` | 工具链从 `.eml` 转出的长 Markdown（尚未深度脱敏） |
-| `md_full/` | 离线脱敏后的 Markdown，**仅本目录内容建议接入线上 API** |
+| **`email_input/`** | **请你把导出的 `.eml` 放在这里**（教程起点） |
+| `md_from_eml/` | `Toolforeml2QA` 从 `.eml` 转出的长 Markdown（尚未深度脱敏） |
+| `md_full/` | 脱敏后的 Markdown，再给 `process_email_qa.py` 使用 |
 | `qa_output/email_qa.jsonl` | QA 抽取结果 |
 
 ### `secrets/`（密钥目录，**真实 key 勿提交**）
@@ -132,12 +167,12 @@ python process_email_qa.py
 
 ---
 
-## 使用步骤摘要
+## 使用步骤摘要（对应上方「新手教程」）
 
-1. 将 Foxmail 导出的 `.eml` 用 **`Toolforeml2QA`** 转为 Markdown，放入 **`data/md_from_eml/`**。
-2. 运行 **`python scrub_markdown_pii.py`**（默认走与 QA 相同的 OpenAI 配置），输出到 **`data/md_full/`**；若只在**内网**跑脱敏，请设置 `OPENAI_BASE_URL` 指向本地服务。
-3. 运行 **`python process_email_qa.py`**，得到 **`data/qa_output/email_qa.jsonl`**（已处理过的文件会按输出 JSONL 中的 `file` 字段跳过，便于断点续跑）。
-4. （可选）**`clean_qa_jsonl.py`** 二次清洗 → **`export_jsonl_to_csv.py`** 导出 Excel 友好 CSV。
+1. **`.eml` → `data/email_input/`** → 用 **`Toolforeml2QA`** 批量转为 **`data/md_from_eml/`**。
+2. **`python scrub_markdown_pii.py`** → 输出 **`data/md_full/`**（内网脱敏可设 `OPENAI_BASE_URL`）。
+3. **`python process_email_qa.py`** → **`data/qa_output/email_qa.jsonl`**（支持按已处理文件名续跑）。
+4. （可选）**`clean_qa_jsonl.py`** → **`export_jsonl_to_csv.py`**。
 
 **输出 JSONL 每行字段示例**：`file`、`category`、`model`、`issue`、`resolution`、`code_snippet`（与 `distill_emails_system.txt` 中约定一致）。
 
