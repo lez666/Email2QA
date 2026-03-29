@@ -44,4 +44,5 @@
 
 ## `docs/` — 文档与配图
 
-本目录、`assets/` 下的静态资源供 README 引用。
+- **`STRUCTURE.md`**（本文件）：目录与职责说明。
+- **`assets/logicpic.png`**：主 README 中的处理工作流配图。
