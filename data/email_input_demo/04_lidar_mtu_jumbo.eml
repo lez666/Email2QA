@@ -1,0 +1,19 @@
+From: "Jan Vogel" <j.vogel@eu-mobile-robotics.eu>
+To: support@demo-robotics.example
+Subject: Re: Lidar gigabit stream incomplete / MTU
+Date: Wed, 05 Mar 2025 08:40:00 +0100
+Message-ID: <04_lidar_mtu_jumbo@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+We only receive partial frames on the Lidar topic over GigE. Wireshark shows =
+fragmentation.
+Should we enable jumbo frames (MTU 9000) on the Orin NX interface, or keep 15=
+00 and lower the packet rate?
+
+---
+Reply:
+Start with MTU 1500 and verify switch port settings. If the network supports =
+end-to-end jumbo frames, MTU 9000 can help for high-rate pointcloud streams; =
+otherwise enable software packet reassembly in the driver.

@@ -40,7 +40,7 @@
 
 ## `data/` — 数据目录
 
-约定与敏感程度见 [data/README.md](../data/README.md)。大文件与隐私内容默认被 `.gitignore` 排除。
+约定与敏感程度见 [data/README.md](../data/README.md)。大文件与隐私内容默认被 `.gitignore` 排除。虚构流程演示用 `.eml` 见 **`data/email_input_demo/`**（可随仓库提交）。
 
 ## `docs/` — 文档与配图
 

@@ -1,0 +1,18 @@
+From: "Ops Team" <ops@warehouse-bot.jp>
+To: support@demo-robotics.example
+Subject: Cable length limit for Lidar Ethernet
+Date: Wed, 05 Mar 2025 22:10:00 +0900
+Message-ID: <05_lidar_cable_length@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+We need to place the Lidar 18m away from the IPC. With Cat6A we still see occ=
+asional timeouts.
+What is the maximum recommended cable length for your sensor at full rate?
+
+---
+Reply:
+For full-rate operation we recommend <=3D 15m passive copper with quality shi=
+elding. Beyond that, use a fiber media converter pair or an industrial Ethern=
+et repeater.

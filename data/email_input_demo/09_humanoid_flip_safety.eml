@@ -1,0 +1,14 @@
+From: "Research Group A" <rga@robot-institute.org>
+To: support@demo-robotics.example
+Subject: Humanoid Robot Flip action failed - joint safety trigger
+Date: Tue, 11 Mar 2025 09:30:00 +0000
+Message-ID: <09_humanoid_flip_safety@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+We tried the 'Front Flip' command on the Humanoid Robot.
+The robot starts the jump but shuts down mid-air.
+Error log: "Knee joint torque limit exceeded".
+
+PS: Regarding the refund, please update the wire transfer info.

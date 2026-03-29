@@ -3,7 +3,7 @@
 本目录下的邮件与中间文件**默认不提交到 Git**（见仓库根目录 `.gitignore`）。  
 下面约定与 [主 README](../README.md) 中的「新手教程」一致。
 
-## 文件夹要放什么
+## 流水线目录（按处理顺序）
 
 | 路径 | 你要做的事 |
 |------|------------|
@@ -12,7 +12,14 @@
 | **`md_full/`** | 由 `scripts/scrub_markdown_pii.py` 脱敏后的 Markdown，再给 `scripts/process_email_qa.py` 用。 |
 | **`qa_output/`** | QA 抽取结果（如 `email_qa.jsonl`）。 |
 
-首次使用若缺少目录，在项目根执行：
+## 示例与演示（可随仓库提交）
+
+| 路径 | 说明 |
+|------|------|
+| **`email_input_demo/`** | **虚构、去标识化** `.eml`（当前 20 封），仅用于测试与展示流程。构造原则见 [email_input_demo/README.md](email_input_demo/README.md)。 |
+| **`demo_unitree_knowledge/`** | （可选）历史示例：`unitree_knowledge_distilled.jsonl` / `.csv`，与流水线目录独立，仅作参考。 |
+
+首次使用若缺少流水线目录，在项目根执行：
 
 ```bash
 mkdir -p data/email_input data/md_from_eml data/md_full data/qa_output

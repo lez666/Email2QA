@@ -1,0 +1,11 @@
+From: "Events" <events@show-floor.us>
+To: support@demo-robotics.example
+Subject: Thermal throttle during outdoor summer demo
+Date: Tue, 18 Mar 2025 19:00:00 -0400
+Message-ID: <19_noise_fan_throttle@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+Ambient 38C — Jetson throttles and whole-body control latency spikes.
+Any chassis airflow mod you recommend for Robot Dog outdoor booths?

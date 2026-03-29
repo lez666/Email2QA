@@ -1,0 +1,18 @@
+From: "Dr. Aris" <a.rivers@nexus-robotics.de>
+To: support@demo-robotics.example
+Subject: Re: [Issue #9921] Lidar ysn check failed on Orin NX
+Date: Mon, 03 Mar 2025 09:15:22 +0000
+Message-ID: <01_lidar_license_nexus@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Hi,
+
+We are testing the Lidar on our new AGV. The pointcloud in RViz is empty.
+The terminal shows: "ysn check failed: license not found".
+We checked the /etc/udev/rules.d but nothing changed.
+
+By the way, we still haven't received the commercial invoice for the last 3 u=
+nits.
+Our finance team needs it for the Q1 audit. Can you send it?

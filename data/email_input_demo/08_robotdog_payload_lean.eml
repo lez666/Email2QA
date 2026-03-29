@@ -1,0 +1,19 @@
+From: "Kevin" <k.tech@silicon-valley-robotics.com>
+To: support@demo-robotics.example
+Subject: Robot Dog leaning 6 degrees during payload test
+Date: Mon, 10 Mar 2025 18:22:00 -0700
+Message-ID: <08_robotdog_payload_lean@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Hi Team,
+
+Our Robot Dog is carrying a 3kg compute pack. It leans to the right by about =
+6 degrees.
+The controller input is neutral. Is it an IMU bias?
+
+---
+Reply:
+Check if the center of gravity (CoG) is centered.
+Even a 1cm offset can cause the pose compensation to tilt.

@@ -1,5 +1,7 @@
-import os
+import argparse
 import json
+import os
+import sys
 from pathlib import Path
 
 from openai import OpenAI, APIConnectionError
@@ -13,6 +15,7 @@ from openai import OpenAI, APIConnectionError
 
 2. 在项目根目录执行：
    python scripts/process_email_qa.py
+   可选参数见：python scripts/process_email_qa.py --help
 
 3. 数据目录约定（所有输入/输出都在 data/ 下）：
    - 输入：遍历 ./data/md_full 下的所有 .md（应已完成离线脱敏，可安全发往线上 API）
@@ -24,6 +27,14 @@ from openai import OpenAI, APIConnectionError
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PROMPT_DIR = PROJECT_ROOT / "prompts"
+
+
+def resolve_project_path(path_str: str) -> Path:
+    """相对路径相对于仓库根；绝对路径原样解析。"""
+    p = Path(path_str).expanduser()
+    if p.is_absolute():
+        return p.resolve()
+    return (PROJECT_ROOT / p).resolve()
 
 # 模型名称优先从环境变量 OPENAI_MODEL 读取，便于在不同环境下灵活切换；
 # 未设置时默认使用最新的 GPT-5.4 模型。
@@ -193,15 +204,30 @@ def process_directory(
     - model: 使用的 OpenAI 模型名称
     - limit_files: 调试用，可限制最多处理多少个文件
     """
-    client = get_client()
-
     input_dir = input_dir.expanduser().resolve()
     output_path = output_path.expanduser().resolve()
+
+    if not input_dir.is_dir():
+        print(
+            f"[ERROR] 输入目录不存在或不是目录：{input_dir}\n"
+            "提示：默认应为脱敏后的 Markdown 目录（如 data/md_full）。",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     md_files = sorted(input_dir.glob("*.md"))
     if limit_files is not None:
         md_files = md_files[:limit_files]
+
+    if not md_files:
+        print(
+            f"[ERROR] 目录下没有 .md 文件：{input_dir}\n"
+            "提示：请确认已完成脱敏（scripts/scrub_markdown_pii.py），且路径正确。",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     # 断点续传：读取已处理的文件名
     processed_file_set = set()
@@ -230,6 +256,15 @@ def process_directory(
     print(f"[INFO] 已处理 {len(processed_file_set)} 个文件，剩余 {len(remaining_files)} 个文件待处理")
     print(f"[INFO] 输出文件：{output_path}")
     print(f"[INFO] 模型：{model}\n")
+
+    if not remaining_files:
+        print(
+            "[INFO] 无需调用 API：当前没有新的 .md 需要处理（均已出现在输出 JSONL 的 file 字段中，"
+            "或目录在 limit 下为空）。若需全量重跑，请备份后删除输出文件再执行。"
+        )
+        return
+
+    client = get_client()
 
     processed_files = len(processed_file_set)
     total_records = existing_record_count
@@ -280,25 +315,60 @@ def process_directory(
                 progress_pct = (processed_files / len(md_files)) * 100
                 print(f"[进度] 已处理文件：{processed_files}/{len(md_files)} ({progress_pct:.1f}%) | 已生成记录：{total_records} | 完成度：{(total_records/len(md_files)*100):.2f}%", flush=True)
 
-    print(f"\n[DONE] 处理完成！")
+    print("\n[DONE] 处理完成！")
     print(f"[DONE] 共处理文件：{processed_files}/{len(md_files)}")
     print(f"[DONE] 共写出 {total_records} 条 QA 记录到 {output_path}")
 
 
 def main():
-    # 默认输入目录和输出路径，你也可以根据需要改成 argparse 接收命令行参数
-    project_root = PROJECT_ROOT
-    data_dir = project_root / "data"
-    input_dir = data_dir / "md_full"
-    # 使用单线程版本的文件名，支持断点续传
-    output_path = data_dir / "qa_output" / "email_qa.jsonl"
+    parser = argparse.ArgumentParser(
+        description="从 Markdown 邮件目录抽取 QA，写入 JSONL（支持断点续传）。",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "示例：\n"
+            "  python scripts/process_email_qa.py --help\n"
+            "  python scripts/process_email_qa.py --limit 5\n"
+            "  python scripts/process_email_qa.py --input-dir data/md_full --output data/qa_output/email_qa.jsonl\n"
+            "\n"
+            "密钥：环境变量 OPENAI_API_KEY 或 secrets/openai_key.txt（详见 secrets/README.md）。"
+        ),
+    )
+    parser.add_argument(
+        "--input-dir",
+        default="data/md_full",
+        metavar="PATH",
+        help="含 .md 的输入目录（相对仓库根，默认 data/md_full）",
+    )
+    parser.add_argument(
+        "--output",
+        default="data/qa_output/email_qa.jsonl",
+        metavar="PATH",
+        help="输出的 JSONL 路径（相对仓库根，默认 data/qa_output/email_qa.jsonl）",
+    )
+    parser.add_argument(
+        "--model",
+        default=None,
+        metavar="NAME",
+        help="模型名（默认读取环境变量 OPENAI_MODEL，未设则使用脚本内默认）",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        metavar="N",
+        help="仅处理排序后的前 N 个 .md（调试用，默认不限制）",
+    )
+    args = parser.parse_args()
 
-    # 如需测试先只跑前 N 个文件，可以把 limit_files 改成一个整数，比如 20
+    model = args.model if args.model is not None else DEFAULT_MODEL
+    input_dir = resolve_project_path(args.input_dir)
+    output_path = resolve_project_path(args.output)
+
     process_directory(
         input_dir=input_dir,
         output_path=output_path,
-        model=DEFAULT_MODEL,
-        limit_files=None,
+        model=model,
+        limit_files=args.limit,
     )
 
 

@@ -1,0 +1,18 @@
+From: "Alex" <alex@ros-field-test.io>
+To: support@demo-robotics.example
+Subject: ROS2 Foxy pointcloud drops / DDS tuning
+Date: Thu, 06 Mar 2025 16:45:00 +0000
+Message-ID: <06_lidar_ros2_dds_qos@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+On ROS2 Foxy we subscribe to /points but lose ~5% of messages under load.
+Which DDS (Fast-DDS vs Cyclone) do you recommend, and what QoS profile for se=
+nsor_data?
+
+---
+Reply:
+Use RELIABLE only for low-rate commands; for pointclouds prefer BEST_EFFORT w=
+ith history depth 5=E2=80=9310. Cyclone DDS often behaves better on congested=
+ Wi=E2=80=91Fi; on wired LAN tune recv buffer sizes per our tuning guide.

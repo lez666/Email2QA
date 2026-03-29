@@ -61,6 +61,8 @@ data/email_input/
 
 （可建子目录分类；没有该文件夹请自行 `mkdir -p data/email_input`。）
 
+> **只想演示流水线？** 可使用仓库内**虚构、去标识化**样例 **`data/email_input_demo/`**（20 封 `.eml`）。人名、域名、SN 与商业情节均为测试占位，不对应真实客户；构造原则与安全说明见 [data/email_input_demo/README.md](data/email_input_demo/README.md)。输出请用独立目录（如 `data/md_from_eml_demo`），避免覆盖真实数据。
+
 ### 3️⃣ 三步流水线
 
 **第一步 — EML → Markdown（无 LLM）**
@@ -90,12 +92,15 @@ python scripts/scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir d
 
 ```bash
 python scripts/process_email_qa.py
+# 参数说明：python scripts/process_email_qa.py --help
+# 试跑前 N 个文件：python scripts/process_email_qa.py --limit 5
 ```
 
 **可选 — 二次清洗与 Excel**
 
 ```bash
 python scripts/clean_qa_jsonl.py --src data/qa_output/email_qa.jsonl --dst data/qa_output/email_qa_cleaned.jsonl
+# 覆盖重洗（非断点续传）：加 --no-resume
 python scripts/export_jsonl_to_csv.py --src data/qa_output/email_qa.jsonl --dst data/qa_output/email_qa.csv
 ```
 
@@ -123,7 +128,7 @@ python scripts/export_jsonl_to_csv.py --src data/qa_output/email_qa.jsonl --dst 
 | 脚本 | 作用 |
 |------|------|
 | `scripts/scrub_markdown_pii.py` | MD→MD 脱敏（`prompts/scrub_md_pii_system.txt`） |
-| `scripts/process_email_qa.py` | 从 `data/md_full/` 抽取 QA（单线程、可续跑） |
+| `scripts/process_email_qa.py` | 从 `data/md_full/` 抽取 QA（单线程、可续跑；支持 `--input-dir` / `--output` / `--limit`） |
 | `scripts/clean_qa_jsonl.py` | QA JSONL 二次清洗 |
 | `scripts/export_jsonl_to_csv.py` | JSONL → CSV |
 

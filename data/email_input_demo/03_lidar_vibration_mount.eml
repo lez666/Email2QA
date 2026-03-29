@@ -1,0 +1,18 @@
+From: "Sarah Miller" <s.miller@autotech.com>
+To: support@demo-robotics.example
+Subject: Re: High-speed vibration on Lidar Pointcloud
+Date: Tue, 04 Mar 2025 14:33:10 -0500
+Message-ID: <03_lidar_vibration_mount@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+The Lidar hardware itself is fine. But when the robot moves at 2.5m/s, the po=
+intcloud jitters.
+Could this be a firmware bug in the IMU fusion?
+
+---
+Reply:
+Please check the mounting structure. We suggest adding 30-degree silicone dam=
+peners.
+Structural resonance is often mistaken for sensor failure.

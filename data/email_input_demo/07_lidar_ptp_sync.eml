@@ -1,0 +1,16 @@
+From: "R&D B" <rdb@lidar-testbed.org>
+To: support@demo-robotics.example
+Subject: Multi-Lidar time synchronization (PTP)
+Date: Fri, 07 Mar 2025 10:05:00 +0000
+Message-ID: <07_lidar_ptp_sync@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+We run two Lidars on the same robot. Pointclouds look misaligned in fusion.
+Do we need PTP (IEEE 1588) on the switch, or is NTP on the host enough?
+
+---
+Reply:
+For motion compensation, PTP hardware timestamping is strongly recommended. N=
+TP-only is usually insufficient above 1 m/s base motion.

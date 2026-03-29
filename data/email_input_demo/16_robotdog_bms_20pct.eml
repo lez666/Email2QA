@@ -1,0 +1,12 @@
+From: "Field Tech" <tech@agri-bot.io>
+To: support@demo-robotics.example
+Subject: Robot Dog shutdown at low battery voltage
+Date: Fri, 14 Mar 2025 14:55:00 +0000
+Message-ID: <16_robotdog_bms_20pct@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Our Robot Dog shuts down unexpectedly when the battery hits 20%.
+Is there a BMS firmware update for the 48V system?
+We need this fixed before our field test next week.

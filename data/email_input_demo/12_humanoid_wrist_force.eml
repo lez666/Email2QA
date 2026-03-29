@@ -1,0 +1,11 @@
+From: "Tom" <tom@manip-ai.co>
+To: support@demo-robotics.example
+Subject: Humanoid wrist force limit during manipulation
+Date: Wed, 12 Mar 2025 17:45:00 +0000
+Message-ID: <12_humanoid_wrist_force@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+We get FORCE_LIMIT on the right wrist when grasping 2.1kg boxes.
+Spec says 3kg payload — is that under quasi-static assumption only?

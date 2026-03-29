@@ -1,0 +1,12 @@
+From: "Maya" <maya@legged-lab.edu>
+To: support@demo-robotics.example
+Subject: Quadruped stair climbing gait instability
+Date: Wed, 12 Mar 2025 11:00:00 +0000
+Message-ID: <11_quadruped_stairs_gait@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Our Robot Dog slips on the third step when using the default stair gait.
+IMU looks stable. Do you have a recommended foot placement policy for 18cm ri=
+sers?

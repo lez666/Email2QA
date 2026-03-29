@@ -1,0 +1,11 @@
+From: "Site Eng" <eng@factory-floor.au>
+To: support@demo-robotics.example
+Subject: EMI causing encoder glitches near VFD
+Date: Thu, 13 Mar 2025 02:20:00 +1100
+Message-ID: <13_robotdog_emi_noise@fictional.demo>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Near variable-frequency drives we see sporadic encoder jumps on two legs.
+Any shielding or cable routing checklist for Robot Dog deployments?

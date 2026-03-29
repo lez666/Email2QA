@@ -22,6 +22,9 @@ from openai import OpenAI
   python scripts/clean_qa_jsonl.py \\
       --src data/qa_output/email_qa.jsonl \\
       --dst data/qa_output/email_qa_cleaned.jsonl
+
+  # 从头覆盖清洗（非断点续传）：
+  python scripts/clean_qa_jsonl.py --no-resume --src ... --dst ...
 """
 
 
@@ -237,7 +240,8 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="对 QA JSONL 结果做二次清洗，统一口吻并去除私有链接。"
+        description="对 QA JSONL 结果做二次清洗，统一口吻并去除私有链接。",
+        epilog="断点续传：默认若 --dst 已存在则从上次行数继续；全量重洗请加 --no-resume。",
     )
     parser.add_argument(
         "--src",
@@ -265,6 +269,11 @@ def main() -> None:
         default=None,
         help="调试用，最多只处理前 N 条记录（默认：不限制）。",
     )
+    parser.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="忽略已有输出文件，从头清洗并覆盖写入目标文件（默认会断点续传）。",
+    )
 
     args = parser.parse_args()
 
@@ -273,7 +282,7 @@ def main() -> None:
         dst=Path(args.dst),
         model=args.model,
         limit=args.limit,
-        resume=True,
+        resume=not args.no_resume,
     )
 
 
