@@ -59,7 +59,7 @@ pip install -r requirements.txt
 data/email_input/
 ```
 
-（可建子目录分类；没有该文件夹请自行 `mkdir -p data/email_input`。）
+（可建子目录分类；克隆本仓库后 `data/email_input/` 等流水线目录已随 `.gitkeep` 建好。）
 
 > **只想演示流水线？** 可使用仓库内**虚构、去标识化**样例 **`data/email_input_demo/`**（20 封 `.eml`）。人名、域名、SN 与商业情节均为测试占位，不对应真实客户；构造原则与安全说明见 [data/email_input_demo/README.md](data/email_input_demo/README.md)。输出请用独立目录（如 `data/md_from_eml_demo`），避免覆盖真实数据。
 
@@ -127,11 +127,7 @@ EML 工具链见 **[tools/Toolforeml2QA/README.md](tools/Toolforeml2QA/README.md
 |------|------|
 | `data/email_input_demo/` | **虚构、去标识化** `.eml`（当前 20 封）。构造原则与安全说明见 [data/email_input_demo/README.md](data/email_input_demo/README.md)。 |
 
-首次使用若缺少流水线目录：
-
-```bash
-mkdir -p data/email_input data/md_from_eml data/md_full data/qa_output
-```
+克隆本仓库后，`email_input`、`md_from_eml`、`md_full`、`qa_output` 四个目录已存在（内为空的 `.gitkeep`，便于 Git 跟踪空文件夹）。若被误删，可执行：`mkdir -p data/email_input data/md_from_eml data/md_full data/qa_output`。
 
 **与 `tools/Toolforeml2QA` 的配合**：邮件正文为 **HTML** 时需要系统已安装 **`pandoc`** 并在 `PATH` 中；纯文本正文不依赖 pandoc。转换命令见上文「快速开始」第一步。
 

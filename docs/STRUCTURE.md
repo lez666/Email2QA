@@ -40,7 +40,7 @@
 
 ## `data/` — 数据目录
 
-`data/` 约定、脚本参数与敏感程度见根目录 [README.md](../README.md)（「数据目录」「脚本与参数」）。大文件与隐私内容默认被 `.gitignore` 排除。虚构演示见 **`data/email_input_demo/`**（可随仓库提交）。
+`data/` 约定、脚本参数与敏感程度见根目录 [README.md](../README.md)（「数据目录」「脚本与参数」）。流水线子目录（`email_input`、`md_from_eml`、`md_full`、`qa_output`）仓库内已含 `.gitkeep`；其余本地数据默认被 `.gitignore` 排除。虚构演示见 **`data/email_input_demo/`**（可随仓库提交）。
 
 ## `docs/` — 文档与配图
 

@@ -12,14 +12,17 @@ __pycache__/
 *.pyc
 
 # GPT-5 处理结果（不公开到 GitHub）
-data/qa_output/
 data/processed_files.log
 
-# 输入数据（通常不提交，除非是示例）
-data/email_input/
-# 工具链产出的长 Markdown（未脱敏 / 已脱敏均建议本地保留）
-data/md_from_eml/
-data/md_full/
+# 流水线目录：仅跟踪各目录下的 .gitkeep，其余本地文件不提交
+data/email_input/**
+!data/email_input/.gitkeep
+data/md_from_eml/**
+!data/md_from_eml/.gitkeep
+data/md_full/**
+!data/md_full/.gitkeep
+data/qa_output/**
+!data/qa_output/.gitkeep
 
 # 大规模原始邮件 markdown（本地使用，不推到 GitHub）
 data/msy_email_md_full_demo/
