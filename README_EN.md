@@ -29,7 +29,7 @@ scrub_markdown_pii.py (offline OpenAI-compatible API, MD→MD)
     ↓
 data/md_full/          ← only from here onward should go to a public API
     ↓
-process_email_qa_async.py (or process_email_qa.py)
+process_email_qa.py
     ↓
 data/qa_output/email_qa.jsonl
     ↓
@@ -50,7 +50,7 @@ Folder **`Toolforeml2QA/`** is self-contained. For HTML parts, **`pandoc`** must
 |--------|------|
 | `scrub_markdown_pii.py` | Offline MD→MD scrub (`prompts/scrub_md_pii_system.txt`) |
 | `process_email_qa.py` | QA from `data/md_full/`, single-threaded, append + skip processed files |
-| `process_email_qa_async.py` | Same, async (default 8 workers) |
+| `process_email_qa_gemini.py` | (Optional) Same QA schema via Google Gemini |
 | `clean_qa_jsonl.py` | Second-pass QA rewrite |
 | `export_jsonl_to_csv.py` | JSONL → CSV |
 
@@ -100,7 +100,7 @@ Default base URL if unset: `http://127.0.0.1:8000/v1`.
 ```bash
 export OPENAI_API_KEY="your-key"
 export OPENAI_MODEL="gpt-4.1"   # example
-python process_email_qa_async.py
+python process_email_qa.py
 ```
 
 Or put the key in `secrets/openai_key.txt` (first non-empty, non-`#` line; any prefix OK).
@@ -110,8 +110,7 @@ Or put the key in `secrets/openai_key.txt` (first non-empty, non-`#` line; any p
 ## Notes
 
 1. Keep offline and online credentials separate.
-2. `process_email_qa_async.py` truncates and rebuilds its output JSONL by default; the single-threaded script appends and skips already-seen filenames.
-3. Tune `CONCURRENCY` in the async script to match your API limits.
+2. `process_email_qa.py` appends to the output JSONL and skips `.md` files whose names already appear in existing records (resume-friendly). Delete the JSONL to force a full rerun.
 
 ---
 

@@ -29,7 +29,7 @@ scrub_markdown_pii.py（离线 OpenAI 兼容接口，MD→MD）
     ↓
 data/md_full/         ← 仅此处及之后的文件适合发往公网 API
     ↓
-process_email_qa_async.py（或单线程 process_email_qa.py）
+process_email_qa.py（单线程，顺序处理）
     ↓
 data/qa_output/email_qa.jsonl
     ↓
@@ -53,10 +53,10 @@ data/qa_output/email_qa.jsonl
 | 脚本 | 作用 |
 |------|------|
 | **`scrub_markdown_pii.py`** | 离线 MD→MD 脱敏（`prompts/scrub_md_pii_system.txt`） |
-| **`process_email_qa.py`** | 从 `data/md_full/` 抽取 QA，单线程，支持断点续写输出 |
-| **`process_email_qa_async.py`** | 同上，异步并发（默认 8），适合大批量 |
+| **`process_email_qa.py`** | 从 `data/md_full/` 抽取 QA，**单线程**，支持按已输出记录断点续跑 |
 | **`clean_qa_jsonl.py`** | 对已生成的 QA JSONL 二次清洗（口吻与链接等） |
 | **`export_jsonl_to_csv.py`** | JSONL → CSV |
+| **`process_email_qa_gemini.py`** | （可选）使用 Google Gemini 抽取 QA，提示词与 OpenAI 版一致 |
 
 ### `prompts/`
 
@@ -111,12 +111,12 @@ python scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_f
 
 未设置环境变量时，从 `secrets/offline_openai_api_key.txt` 与可选的 `secrets/offline_openai_base_url.txt` 读取；未提供 Base URL 时默认 `http://127.0.0.1:8000/v1`。
 
-### 线上 QA 抽取（`process_email_qa*.py`）
+### 线上 QA 抽取（`process_email_qa.py`）
 
 ```bash
 export OPENAI_API_KEY="你的线上_key"
 export OPENAI_MODEL="gpt-4.1"   # 可选，按你的服务商填写
-python process_email_qa_async.py
+python process_email_qa.py
 ```
 
 或写入 `secrets/openai_key.txt`（第一行非注释非空即为 Key，**不限定 `sk-` 前缀**，便于兼容代理网关）。
@@ -127,7 +127,7 @@ python process_email_qa_async.py
 
 1. 将 Foxmail 导出的 `.eml` 用 **`Toolforeml2QA`** 转为 Markdown，放入 **`data/md_from_eml/`**。
 2. 在**离线环境**运行 **`python scrub_markdown_pii.py`**，输出到 **`data/md_full/`**。
-3. 在可访问**线上 API** 的环境运行 **`process_email_qa_async.py`**（或 `process_email_qa.py`），得到 **`data/qa_output/email_qa.jsonl`**。
+3. 在可访问**线上 API** 的环境运行 **`python process_email_qa.py`**，得到 **`data/qa_output/email_qa.jsonl`**（已处理过的文件会按输出 JSONL 中的 `file` 字段跳过，便于断点续跑）。
 4. （可选）**`clean_qa_jsonl.py`** 二次清洗 → **`export_jsonl_to_csv.py`** 导出 Excel 友好 CSV。
 
 **输出 JSONL 每行字段示例**：`file`、`category`、`model`、`issue`、`resolution`、`code_snippet`（与 `distill_emails_system.txt` 中约定一致）。
@@ -144,8 +144,7 @@ python process_email_qa_async.py
 ## 注意事项
 
 1. **密钥分离**：离线与线上使用不同文件或环境变量，避免把内网推理服务的 token 与公网 Key 混在同一配置里。
-2. **`process_email_qa_async.py`** 默认会清空并重建输出 JSONL；单线程版对同一输出文件采用追加与按文件名跳过，便于断点续跑。
-3. 并发与限速：异步版可通过脚本内 `CONCURRENCY` 调整，需符合你的线上 API 配额。
+2. **`process_email_qa.py`** 若输出 JSONL 已存在，会读取其中已出现的 `file` 并跳过对应 Markdown，适合长时间任务中断后续跑；若要全量重跑，请先删除或移走该 JSONL。
 
 ---
 

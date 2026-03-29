@@ -29,7 +29,7 @@ scrub_markdown_pii.py（オフライン OpenAI 互換、MD→MD）
     ↓
 data/md_full/     ← 以降のみ公网 API に送る想定
     ↓
-process_email_qa_async.py（または process_email_qa.py）
+process_email_qa.py
     ↓
 data/qa_output/email_qa.jsonl
     ↓
@@ -50,7 +50,7 @@ data/qa_output/email_qa.jsonl
 |-----------|------|
 | `scrub_markdown_pii.py` | オフライン MD→MD 脱敏 |
 | `process_email_qa.py` | `data/md_full/` から QA 抽出（単一スレッド） |
-| `process_email_qa_async.py` | 同上（非同期・並列） |
+| `process_email_qa_gemini.py` | （任意）Google Gemini で同スキーマ抽出 |
 | `clean_qa_jsonl.py` | QA JSONL の二次クレンジング |
 | `export_jsonl_to_csv.py` | JSONL → CSV |
 
@@ -91,7 +91,7 @@ python scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_f
 
 ```bash
 export OPENAI_API_KEY="your-key"
-python process_email_qa_async.py
+python process_email_qa.py
 ```
 
 キーは `secrets/openai_key.txt` の先頭の非コメント行でも可（`sk-` 以外のプレフィックスも可）。
@@ -101,8 +101,7 @@ python process_email_qa_async.py
 ## 注意
 
 1. オフライン／オンラインの認証情報を混在させないこと。  
-2. 非同期版は出力 JSONL を毎回上書き初期化する設計です。単一スレッド版は追記とファイル名スキップでリジュームに近い動きになります。  
-3. `CONCURRENCY` は API レートに合わせて調整してください。
+2. `process_email_qa.py` は既存の JSONL に含まれる `file` を読み、該当 `.md` をスキップして再開しやすくしています。全件やり直す場合は JSONL を削除または退避してください。
 
 ---
 
