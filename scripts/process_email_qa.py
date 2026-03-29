@@ -12,7 +12,7 @@ from openai import OpenAI, APIConnectionError
    export OPENAI_API_KEY="你的_openai_api_key"
 
 2. 在项目根目录执行：
-   python process_email_qa.py
+   python scripts/process_email_qa.py
 
 3. 数据目录约定（所有输入/输出都在 data/ 下）：
    - 输入：遍历 ./data/md_full 下的所有 .md（应已完成离线脱敏，可安全发往线上 API）
@@ -22,7 +22,7 @@ from openai import OpenAI, APIConnectionError
 """
 
 
-PROJECT_ROOT = Path(__file__).parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PROMPT_DIR = PROJECT_ROOT / "prompts"
 
 # 模型名称优先从环境变量 OPENAI_MODEL 读取，便于在不同环境下灵活切换；
@@ -47,7 +47,7 @@ def load_api_key() -> str:
     if key:
         return key
 
-    key_path = Path(__file__).parent / "secrets" / "openai_key.txt"
+    key_path = PROJECT_ROOT / "secrets" / "openai_key.txt"
     if key_path.exists():
         content = key_path.read_text(encoding="utf-8")
         # 跳过注释行（以 # 开头的行），只读取实际的 key

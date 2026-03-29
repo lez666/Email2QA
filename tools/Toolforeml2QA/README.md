@@ -4,7 +4,7 @@
 
 ## 在本仓库中的推荐路径（Email2QA 主项目）
 
-与主仓库 [README](../README.md) 约定一致时：
+与主仓库 [README](../../README.md) 约定一致时：
 
 | 步骤 | 目录 |
 |------|------|
@@ -15,8 +15,8 @@
 
 ```bash
 mkdir -p data/email_input data/md_from_eml
-chmod +x Toolforeml2QA/batch-eml2md.sh
-./Toolforeml2QA/batch-eml2md.sh data/email_input data/md_from_eml
+chmod +x tools/Toolforeml2QA/batch-eml2md.sh
+./tools/Toolforeml2QA/batch-eml2md.sh data/email_input data/md_from_eml
 ```
 
 更完整的「新手教程」见仓库根目录 **README.md** 与 **data/README.md**。

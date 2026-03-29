@@ -21,9 +21,9 @@
 | | |
 | :--- | :--- |
 | 🛡️ **隐私可控** | 脱敏步骤 **兼容 OpenAI 接口**：可接 **内网 vLLM / Ollama**（`OPENAI_BASE_URL`），敏感原文不必出内网；也支持默认走云端 API，按合规自选。 |
-| 🧩 **格式保真** | HTML 正文经 **pandoc** 转 Markdown，尽量保留代码块、列表与结构（见 `Toolforeml2QA/`）。 |
+| 🧩 **格式保真** | HTML 正文经 **pandoc** 转 Markdown，尽量保留代码块、列表与结构（见 `tools/Toolforeml2QA/`）。 |
 | 🧠 **面向邮件的 Prompt** | `prompts/distill_emails_system.txt` 等针对技术支持邮件场景调优，输出统一 QA 字段。 |
-| ⚡ **断点续跑** | `process_email_qa.py` 会跳过 JSONL 中已出现过的 `file`；`scrub` 支持跳过已生成目标文件（`--overwrite` 可强刷）。 |
+| ⚡ **断点续跑** | `scripts/process_email_qa.py` 会跳过 JSONL 中已出现过的 `file`；`scrub` 支持跳过已生成目标文件（`--overwrite` 可强刷）。 |
 | 📁 **目录约定清晰** | **`.eml` 固定放 `data/email_input/`**，其余阶段见下表与 [data/README.md](data/README.md)。 |
 
 ---
@@ -32,7 +32,7 @@
 
 <div align="center">
 
-![Email2QA 处理工作流：从 email_input 经 Pandoc、脱敏、QA 蒸馏到 qa_output](logicpic.png)
+![Email2QA 处理工作流：从 email_input 经 Pandoc、脱敏、QA 蒸馏到 qa_output](docs/assets/logicpic.png)
 
 </div>
 
@@ -67,15 +67,15 @@ data/email_input/
 
 ```bash
 mkdir -p data/email_input data/md_from_eml
-chmod +x Toolforeml2QA/batch-eml2md.sh
-./Toolforeml2QA/batch-eml2md.sh data/email_input data/md_from_eml
+chmod +x tools/Toolforeml2QA/batch-eml2md.sh
+./tools/Toolforeml2QA/batch-eml2md.sh data/email_input data/md_from_eml
 ```
 
 **第二步 — MD 深度脱敏（🛡️ 隐私关键步骤）**
 
 ```bash
 # 先配置 secrets/openai_key.txt 或 export OPENAI_API_KEY=...
-python scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_full
+python scripts/scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_full
 ```
 
 💡 **只想在内网脱敏？** 将 `OPENAI_BASE_URL` 指向本地兼容服务（或写入 `secrets/openai_base_url.txt` 一行），并设置 `OPENAI_MODEL` 为本地模型 ID。示例：
@@ -83,23 +83,23 @@ python scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_f
 ```bash
 export OPENAI_BASE_URL="http://127.0.0.1:8000/v1"
 export OPENAI_MODEL="你的本地模型"
-python scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_full
+python scripts/scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_full
 ```
 
 **第三步 — QA 蒸馏（MD → JSONL）**
 
 ```bash
-python process_email_qa.py
+python scripts/process_email_qa.py
 ```
 
 **可选 — 二次清洗与 Excel**
 
 ```bash
-python clean_qa_jsonl.py --src data/qa_output/email_qa.jsonl --dst data/qa_output/email_qa_cleaned.jsonl
-python export_jsonl_to_csv.py --src data/qa_output/email_qa.jsonl --dst data/qa_output/email_qa.csv
+python scripts/clean_qa_jsonl.py --src data/qa_output/email_qa.jsonl --dst data/qa_output/email_qa_cleaned.jsonl
+python scripts/export_jsonl_to_csv.py --src data/qa_output/email_qa.jsonl --dst data/qa_output/email_qa.csv
 ```
 
-更细的步骤说明见 **[data/README.md](data/README.md)**；工具链选项见 **[Toolforeml2QA/README.md](Toolforeml2QA/README.md)**。
+更细的步骤说明见 **[data/README.md](data/README.md)**；EML 工具链见 **[tools/Toolforeml2QA/README.md](tools/Toolforeml2QA/README.md)**；仓库布局见 **[docs/STRUCTURE.md](docs/STRUCTURE.md)**。
 
 ---
 
@@ -118,14 +118,16 @@ python export_jsonl_to_csv.py --src data/qa_output/email_qa.jsonl --dst data/qa_
 
 ## 🧰 主要脚本与 `prompts/`
 
+所有 Python 入口在 **`scripts/`**（请在**仓库根目录**执行 `python scripts/…`）。
+
 | 脚本 | 作用 |
 |------|------|
-| `scrub_markdown_pii.py` | MD→MD 脱敏（`prompts/scrub_md_pii_system.txt`） |
-| `process_email_qa.py` | 从 `data/md_full/` 抽取 QA（单线程、可续跑） |
-| `clean_qa_jsonl.py` | QA JSONL 二次清洗 |
-| `export_jsonl_to_csv.py` | JSONL → CSV |
+| `scripts/scrub_markdown_pii.py` | MD→MD 脱敏（`prompts/scrub_md_pii_system.txt`） |
+| `scripts/process_email_qa.py` | 从 `data/md_full/` 抽取 QA（单线程、可续跑） |
+| `scripts/clean_qa_jsonl.py` | QA JSONL 二次清洗 |
+| `scripts/export_jsonl_to_csv.py` | JSONL → CSV |
 
-**Prompt 文件**：`distill_emails_system.txt`、`scrub_md_pii_system.txt`、`clean_qa_items_system.txt`。
+**Prompt**：`prompts/distill_emails_system.txt`、`prompts/scrub_md_pii_system.txt`、`prompts/clean_qa_items_system.txt`。
 
 ---
 
@@ -141,7 +143,25 @@ python export_jsonl_to_csv.py --src data/qa_output/email_qa.jsonl --dst data/qa_
 ## ⚠️ 注意事项
 
 1. 脱敏与 QA **默认共用**同一套 Key；若脱敏只走内网，请显式设置 `OPENAI_BASE_URL`，避免误连公网。
-2. `process_email_qa.py` 输出已存在时会按 `file` 字段跳过已处理邮件；全量重跑请先备份或删除原 JSONL。
+2. `scripts/process_email_qa.py` 输出已存在时会按 `file` 字段跳过已处理邮件；全量重跑请先备份或删除原 JSONL。
+
+---
+
+## 📂 仓库结构（摘要）
+
+```
+Email2QA/
+├── README.md / README_EN.md / README_JA.md
+├── LICENSE / requirements.txt / .gitignore
+├── docs/                    # 文档与配图
+│   ├── STRUCTURE.md         # 本仓库目录说明（更全）
+│   └── assets/logicpic.png  # 工作流示意图
+├── scripts/                 # Python 流水线入口（从根目录 python scripts/… 运行）
+├── tools/Toolforeml2QA/     # .eml → .md（pandoc），可单独拷贝使用
+├── prompts/                 # 各阶段系统提示词
+├── secrets/                 # 本地密钥（勿提交真实 key，见 secrets/README.md）
+└── data/                    # 邮件与中间产物（默认 gitignore，见 data/README.md）
+```
 
 ---
 

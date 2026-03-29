@@ -19,13 +19,13 @@ from openai import OpenAI
   export OPENAI_API_KEY="你的_openai_key"
   # 建议清洗脚本使用 GPT-4 族模型（更便宜），如 gpt-4.1-mini
   export OPENAI_MODEL="gpt-4.1-mini"
-  python clean_qa_jsonl.py \\
+  python scripts/clean_qa_jsonl.py \\
       --src data/qa_output/email_qa.jsonl \\
-      --dst data/qa_output/temp/Enzi'sknowledge.jsonl
+      --dst data/qa_output/email_qa_cleaned.jsonl
 """
 
 
-PROJECT_ROOT = Path(__file__).parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PROMPT_DIR = PROJECT_ROOT / "prompts"
 
 # 清洗脚本可以使用更便宜的 GPT-4 系模型：
@@ -242,26 +242,16 @@ def main() -> None:
     parser.add_argument(
         "--src",
         type=str,
-        default=str(
-            PROJECT_ROOT
-            / "data"
-            / "qa_output"
-            / "temp"
-            / "email_qasingle thread.jsonl"
-        ),
-        help="源 JSONL 文件路径（默认：data/qa_output/temp/email_qasingle thread.jsonl）",
+        default=str(PROJECT_ROOT / "data" / "qa_output" / "email_qa.jsonl"),
+        help="源 JSONL 文件路径（默认：data/qa_output/email_qa.jsonl）",
     )
     parser.add_argument(
         "--dst",
         type=str,
         default=str(
-            PROJECT_ROOT
-            / "data"
-            / "qa_output"
-            / "temp"
-            / "Enzi'sknowledge.jsonl"
+            PROJECT_ROOT / "data" / "qa_output" / "email_qa_cleaned.jsonl"
         ),
-        help="清洗后的 JSONL 输出路径（默认：data/qa_output/temp/Enzi'sknowledge.jsonl）",
+        help="清洗后的 JSONL 输出路径（默认：data/qa_output/email_qa_cleaned.jsonl）",
     )
     parser.add_argument(
         "--model",

@@ -8,14 +8,14 @@ from pathlib import Path
 通用 JSONL → CSV 转换脚本。
 
 默认行为（在项目根目录）：
-    python export_jsonl_to_csv.py
+    python scripts/export_jsonl_to_csv.py
 等价于：
-    python export_jsonl_to_csv.py \\
+    python scripts/export_jsonl_to_csv.py \\
         --src data/qa_output/email_qa.jsonl \\
         --dst data/qa_output/email_qa.csv
 
 也可以自定义任意输入/输出路径，例如：
-    python export_jsonl_to_csv.py \\
+    python scripts/export_jsonl_to_csv.py \\
         --src data/qa_output/temp/Enzi'sknowledge.jsonl \\
         --dst data/qa_output/temp/Enzi'sknowledge.csv
 """
@@ -115,7 +115,7 @@ def parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_args()
-    project_root = Path(__file__).parent
+    project_root = Path(__file__).resolve().parent.parent
     src = (project_root / args.src).resolve()
     dst = (project_root / args.dst).resolve()
     jsonl_to_csv(src, dst)

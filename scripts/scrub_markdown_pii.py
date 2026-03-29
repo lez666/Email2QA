@@ -15,7 +15,7 @@
   export OPENAI_API_KEY="local"
   # 或写入 secrets/openai_key.txt
   export OPENAI_MODEL="你的本地模型 ID"
-  python scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_full
+  python scripts/scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_full
 
 并发数：`SCRUB_CONCURRENCY`（默认 4）；仍识别旧名 `OFFLINE_SCRUB_CONCURRENCY`。
 
@@ -41,7 +41,7 @@ from tenacity import (
 )
 from tqdm import tqdm
 
-PROJECT_ROOT = Path(__file__).parent
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PROMPT_DIR = PROJECT_ROOT / "prompts"
 DATA_DIR = PROJECT_ROOT / "data"
 
