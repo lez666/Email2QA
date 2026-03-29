@@ -2,4 +2,3 @@ openai>=1.0.0
 beautifulsoup4
 tenacity
 tqdm
-google-genai>=0.2.0

@@ -50,7 +50,6 @@ data/qa_output/email_qa.jsonl
 |-----------|------|
 | `scrub_markdown_pii.py` | オフライン MD→MD 脱敏 |
 | `process_email_qa.py` | `data/md_full/` から QA 抽出（単一スレッド） |
-| `process_email_qa_gemini.py` | （任意）Google Gemini で同スキーマ抽出 |
 | `clean_qa_jsonl.py` | QA JSONL の二次クレンジング |
 | `export_jsonl_to_csv.py` | JSONL → CSV |
 
@@ -63,7 +62,6 @@ data/qa_output/email_qa.jsonl
 | `offline_openai_api_key.txt` | オフライン脱敏サービス |
 | `offline_openai_base_url.txt` | 任意（OpenAI 互換 Base URL） |
 | `openai_key.txt` | **オンライン** API キー |
-| `google_api_key.txt` | Gemini（`process_email_qa_gemini.py`） |
 
 環境変数 `OFFLINE_OPENAI_*` / `OPENAI_API_KEY` 等で上書き可能です。
 

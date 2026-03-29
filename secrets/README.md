@@ -8,7 +8,6 @@
 | `openai_key.txt` | **线上** OpenAI 兼容 API（`process_email_qa.py`、`clean_qa_jsonl.py` 等） | `OPENAI_API_KEY` |
 | `offline_openai_api_key.txt` | **离线**脱敏服务（`scrub_markdown_pii.py`） | `OFFLINE_OPENAI_API_KEY` |
 | `offline_openai_base_url.txt` | 离线服务地址，一行即可，例如 `http://127.0.0.1:8000/v1` | `OFFLINE_OPENAI_BASE_URL` |
-| `google_api_key.txt` | Google Gemini（`process_email_qa_gemini.py`） | `GOOGLE_API_KEY` |
 
 ## 填写规则
 

@@ -50,7 +50,6 @@ Folder **`Toolforeml2QA/`** is self-contained. For HTML parts, **`pandoc`** must
 |--------|------|
 | `scrub_markdown_pii.py` | Offline MD→MD scrub (`prompts/scrub_md_pii_system.txt`) |
 | `process_email_qa.py` | QA from `data/md_full/`, single-threaded, append + skip processed files |
-| `process_email_qa_gemini.py` | (Optional) Same QA schema via Google Gemini |
 | `clean_qa_jsonl.py` | Second-pass QA rewrite |
 | `export_jsonl_to_csv.py` | JSONL → CSV |
 
@@ -69,7 +68,6 @@ After clone, copy `*.example.txt` → `*.txt` and fill in. Full table and rules 
 | `offline_openai_api_key.txt` | Offline scrub service |
 | `offline_openai_base_url.txt` | Optional OpenAI-compatible base URL |
 | `openai_key.txt` | **Online** API key |
-| `google_api_key.txt` | Gemini (`process_email_qa_gemini.py`) |
 
 Env overrides: `OFFLINE_OPENAI_*`, `OPENAI_API_KEY`, `OPENAI_MODEL`, etc.
 

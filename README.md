@@ -56,7 +56,6 @@ data/qa_output/email_qa.jsonl
 | **`process_email_qa.py`** | 从 `data/md_full/` 抽取 QA，**单线程**，支持按已输出记录断点续跑 |
 | **`clean_qa_jsonl.py`** | 对已生成的 QA JSONL 二次清洗（口吻与链接等） |
 | **`export_jsonl_to_csv.py`** | JSONL → CSV |
-| **`process_email_qa_gemini.py`** | （可选）使用 Google Gemini 抽取 QA，提示词与 OpenAI 版一致 |
 
 ### `prompts/`
 
@@ -81,7 +80,6 @@ data/qa_output/email_qa.jsonl
 | `offline_openai_api_key.txt` | 离线服务 API Key 或 token（一行；可用 `#` 写注释） |
 | `offline_openai_base_url.txt` | 可选，例如 `http://127.0.0.1:8000/v1` |
 | `openai_key.txt` | **线上** API Key（一行；可用 `#` 注释） |
-| `google_api_key.txt` | Gemini（`process_email_qa_gemini.py`） |
 
 也可用环境变量覆盖：`OFFLINE_OPENAI_API_KEY`、`OFFLINE_OPENAI_BASE_URL`、`OFFLINE_OPENAI_MODEL`、`OPENAI_API_KEY`、`OPENAI_MODEL` 等。
 
