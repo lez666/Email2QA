@@ -68,8 +68,24 @@ def load_api_key() -> str:
     )
 
 
+def load_base_url() -> str | None:
+    url = os.getenv("OPENAI_BASE_URL", "").strip()
+    if url:
+        return url.rstrip("/")
+    p = PROJECT_ROOT / "secrets" / "openai_base_url.txt"
+    if p.exists():
+        for line in p.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                return line.rstrip("/")
+    return None
+
+
 def get_client() -> OpenAI:
     api_key = load_api_key()
+    base = load_base_url()
+    if base:
+        return OpenAI(api_key=api_key, base_url=base)
     return OpenAI(api_key=api_key)
 
 

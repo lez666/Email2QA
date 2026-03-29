@@ -1,22 +1,25 @@
 """
-离线环境（如本机 vLLM / Ollama OpenAI 兼容接口）下，对 Markdown 邮件正文做 MD→MD 深度脱敏。
+对 Markdown 邮件正文做 MD→MD 深度脱敏（OpenAI 兼容 Chat Completions）。
 
-优先从环境变量读取：
-  OFFLINE_OPENAI_API_KEY、OFFLINE_OPENAI_BASE_URL、OFFLINE_OPENAI_MODEL
+默认与 `process_email_qa.py` 相同：使用**线上 OpenAI 官方 API**（或你在环境变量里指定的兼容端点）。
 
-若未设置，则从 secrets/ 读取（勿提交到 Git）：
-  secrets/offline_openai_api_key.txt   — 第一行非注释且非空即为密钥（支持非 sk- 前缀的本地 token）
-  secrets/offline_openai_base_url.txt  — 可选，例如 http://127.0.0.1:8000/v1
+认证与地址（优先级从高到低）：
+  - `OPENAI_API_KEY`；若未设置则读取 `secrets/openai_key.txt`（第一行非 `#` 的非空行）
+  - `OPENAI_BASE_URL`；可选 `secrets/openai_base_url.txt`（一行）；
+    若仍无则走官方端点
+  - `OPENAI_MODEL`：默认与 `process_email_qa.py` 一致（见下方 DEFAULT_MODEL）
 
-用法（项目根目录）：
-  export OFFLINE_OPENAI_BASE_URL="http://127.0.0.1:8000/v1"
-  export OFFLINE_OPENAI_API_KEY="local"
-  export OFFLINE_OPENAI_MODEL="your-local-model-id"
-  python scrub_markdown_pii.py \\
-      --input-dir data/md_from_eml --output-dir data/md_full
+改用**本机 vLLM / Ollama 等**时，只需设置 Base URL 与本地模型名，Key 仍可用同一文件或环境变量，例如：
 
-默认：输入 data/md_from_eml，输出 data/md_full
-（与线上 QA 抽取脚本约定一致）。
+  export OPENAI_BASE_URL="http://127.0.0.1:8000/v1"
+  export OPENAI_API_KEY="local"
+  # 或写入 secrets/openai_key.txt
+  export OPENAI_MODEL="你的本地模型 ID"
+  python scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_full
+
+并发数：`SCRUB_CONCURRENCY`（默认 4）；仍识别旧名 `OFFLINE_SCRUB_CONCURRENCY`。
+
+默认目录：输入 `data/md_from_eml`，输出 `data/md_full`。
 """
 
 from __future__ import annotations
@@ -44,10 +47,11 @@ DATA_DIR = PROJECT_ROOT / "data"
 
 DEFAULT_INPUT = DATA_DIR / "md_from_eml"
 DEFAULT_OUTPUT = DATA_DIR / "md_full"
-DEFAULT_MODEL = (
-    os.getenv("OFFLINE_OPENAI_MODEL", "local-model").strip() or "local-model"
+DEFAULT_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.4").strip() or "gpt-5.4"
+_raw_conc = os.getenv("SCRUB_CONCURRENCY") or os.getenv(
+    "OFFLINE_SCRUB_CONCURRENCY", "4"
 )
-CONCURRENCY = int(os.getenv("OFFLINE_SCRUB_CONCURRENCY", "4"))
+CONCURRENCY = max(1, int(_raw_conc))
 
 
 def load_prompt(filename: str) -> str:
@@ -67,36 +71,38 @@ def _first_credential_line(path: Path) -> str | None:
     return None
 
 
-def load_offline_api_key() -> str:
-    key = os.getenv("OFFLINE_OPENAI_API_KEY", "").strip()
+def load_api_key() -> str:
+    key = os.getenv("OPENAI_API_KEY", "").strip()
     if key:
         return key
-    p = PROJECT_ROOT / "secrets" / "offline_openai_api_key.txt"
+    p = PROJECT_ROOT / "secrets" / "openai_key.txt"
     v = _first_credential_line(p)
     if v:
         return v
     raise RuntimeError(
-        "未配置离线 API 密钥：请设置环境变量 OFFLINE_OPENAI_API_KEY，"
-        "或在 secrets/offline_openai_api_key.txt 写入一行密钥（可配合 # 注释）。"
+        "未配置 API 密钥：请设置环境变量 OPENAI_API_KEY，"
+        "或在 secrets/openai_key.txt 写入一行 Key（可配合 # 注释）。"
     )
 
 
-def load_offline_base_url() -> str:
-    url = os.getenv("OFFLINE_OPENAI_BASE_URL", "").strip()
+def load_base_url() -> str | None:
+    """有值时使用自定义 Base URL；否则由 SDK 走官方 OpenAI。"""
+    url = os.getenv("OPENAI_BASE_URL", "").strip()
     if url:
         return url.rstrip("/")
-    p = PROJECT_ROOT / "secrets" / "offline_openai_base_url.txt"
+    p = PROJECT_ROOT / "secrets" / "openai_base_url.txt"
     v = _first_credential_line(p)
     if v:
         return v.rstrip("/")
-    return "http://127.0.0.1:8000/v1"
+    return None
 
 
 def get_client() -> AsyncOpenAI:
-    return AsyncOpenAI(
-        api_key=load_offline_api_key(),
-        base_url=load_offline_base_url(),
-    )
+    api_key = load_api_key()
+    base_url = load_base_url()
+    if base_url:
+        return AsyncOpenAI(api_key=api_key, base_url=base_url)
+    return AsyncOpenAI(api_key=api_key)
 
 
 def build_messages(md_text: str, filename: str) -> list[dict[str, str]]:
@@ -155,6 +161,11 @@ async def scrub_one(
     return None
 
 
+def _base_url_display() -> str:
+    u = load_base_url()
+    return u if u else "(OpenAI 官方默认端点)"
+
+
 async def process_directory_async(
     input_dir: Path,
     output_dir: Path,
@@ -177,7 +188,7 @@ async def process_directory_async(
 
     print(f"[INFO] 输入：{input_dir}")
     print(f"[INFO] 输出：{output_dir}")
-    print(f"[INFO] Base URL：{load_offline_base_url()}")
+    print(f"[INFO] Base URL：{_base_url_display()}")
     print(f"[INFO] 模型：{model}")
     print(f"[INFO] 并发：{CONCURRENCY}\n")
 
@@ -224,14 +235,16 @@ async def process_directory_async(
                 fail += 1
         pbar.update(1)
 
-    with tqdm(total=len(md_files), desc="Scrubbing MD (offline)") as pbar:
+    with tqdm(total=len(md_files), desc="Scrubbing MD (PII)") as pbar:
         await asyncio.gather(*[worker(p, pbar) for p in md_files])
 
     print(f"\n[DONE] 成功 {ok}，跳过 {skip}，失败 {fail}")
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="离线 MD→MD 隐私脱敏（OpenAI 兼容接口）。")
+    p = argparse.ArgumentParser(
+        description="MD→MD 隐私脱敏（默认使用线上 OpenAI API，与 process_email_qa 共用密钥配置）。"
+    )
     p.add_argument(
         "--input-dir",
         type=str,
@@ -248,7 +261,7 @@ def parse_args() -> argparse.Namespace:
         "--model",
         type=str,
         default=DEFAULT_MODEL,
-        help="模型 ID（也可用 OFFLINE_OPENAI_MODEL）",
+        help="模型 ID（默认读环境变量 OPENAI_MODEL，与 process_email_qa 一致）",
     )
     p.add_argument(
         "--overwrite",

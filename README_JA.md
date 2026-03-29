@@ -9,10 +9,10 @@
 処理は大きく三段階に分かれます。
 
 1. **形式変換（LLM 不使用）**：`.eml` → 長い Markdown（**`Toolforeml2QA`**。HTML 本文は **pandoc** で変換）。
-2. **オフラインでの MD→MD 脱敏**：内网 GPU やローカルの OpenAI 互換 API 上で実行し、顧客・組織・連絡先などを除去してから次へ。
-3. **オンラインでの知識蒸留**：`data/md_full/` を **公開 API** に送り、`prompts/distill_emails_system.txt` で QA JSONL を生成。必要に応じて `clean_qa_jsonl.py` と CSV 出力。
+2. **MD→MD 脱敏**：`scrub_markdown_pii.py` は **デフォルトで QA 抽出と同じ** OpenAI 公式 API（`OPENAI_API_KEY` / `secrets/openai_key.txt`）。**ローカル**の互換 API（vLLM 等）を使う場合は `OPENAI_BASE_URL` と `OPENAI_MODEL` を設定（[`secrets/README.md`](secrets/README.md)）。
+3. **知識蒸留**：`data/md_full/` を API に送り、`prompts/distill_emails_system.txt` で QA JSONL を生成。必要に応じて `clean_qa_jsonl.py` と CSV 出力。
 
-**オフライン用とオンライン用の API キーは別ファイル／環境変数で管理してください。**
+**脱敏と QA はデフォルトで `openai_key.txt` を共有します。**
 
 ---
 
@@ -25,7 +25,7 @@ Toolforeml2QA（pandoc で HTML→Markdown）
     ↓
 data/md_from_eml/
     ↓
-scrub_markdown_pii.py（オフライン OpenAI 互換、MD→MD）
+scrub_markdown_pii.py（MD→MD 脱敏・デフォルトは公式 OpenAI）
     ↓
 data/md_full/     ← 以降のみ公网 API に送る想定
     ↓
@@ -48,7 +48,7 @@ data/qa_output/email_qa.jsonl
 
 | スクリプト | 役割 |
 |-----------|------|
-| `scrub_markdown_pii.py` | オフライン MD→MD 脱敏 |
+| `scrub_markdown_pii.py` | MD→MD 脱敏（デフォルトは `process_email_qa` と同じ API 設定） |
 | `process_email_qa.py` | `data/md_full/` から QA 抽出（単一スレッド） |
 | `clean_qa_jsonl.py` | QA JSONL の二次クレンジング |
 | `export_jsonl_to_csv.py` | JSONL → CSV |
@@ -59,11 +59,10 @@ data/qa_output/email_qa.jsonl
 
 | ファイル | 用途 |
 |---------|------|
-| `offline_openai_api_key.txt` | オフライン脱敏サービス |
-| `offline_openai_base_url.txt` | 任意（OpenAI 互換 Base URL） |
-| `openai_key.txt` | **オンライン** API キー |
+| `openai_key.txt` | OpenAI 互換 API キー（脱敏・QA・清洗で共有） |
+| `openai_base_url.txt` | 任意（プロキシ／ローカル vLLM 等）。または `OPENAI_BASE_URL` |
 
-環境変数 `OFFLINE_OPENAI_*` / `OPENAI_API_KEY` 等で上書き可能です。
+環境変数 `OPENAI_API_KEY`、`OPENAI_BASE_URL`、`OPENAI_MODEL`、`SCRUB_CONCURRENCY` 等。詳細は [`secrets/README.md`](secrets/README.md)。
 
 ---
 
@@ -77,31 +76,43 @@ pip install -r requirements.txt
 
 ---
 
-## オフライン脱敏の例
+## MD 脱敏（`scrub_markdown_pii.py`）
+
+**デフォルト**：QA 抽出と同じく **OpenAI 公式 API**（`OPENAI_BASE_URL` 未設定時）。
 
 ```bash
-export OFFLINE_OPENAI_BASE_URL="http://127.0.0.1:8000/v1"
-export OFFLINE_OPENAI_API_KEY="local-token"
-export OFFLINE_OPENAI_MODEL="モデルID"
+export OPENAI_API_KEY="your-key"
+export SCRUB_CONCURRENCY="4"   # 任意
 python scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_full
 ```
 
+**ローカル互換 API**（例：vLLM）を使う場合：
+
+```bash
+export OPENAI_BASE_URL="http://127.0.0.1:8000/v1"
+export OPENAI_API_KEY="local"
+export OPENAI_MODEL="ローカルモデルID"
+python scrub_markdown_pii.py --input-dir data/md_from_eml --output-dir data/md_full
+```
+
+Base URL は `secrets/openai_base_url.txt` に 1 行で書いても可。詳細は [`secrets/README.md`](secrets/README.md)。
+
 ---
 
-## オンライン QA 抽出の例
+## QA 抽出の例
 
 ```bash
 export OPENAI_API_KEY="your-key"
 python process_email_qa.py
 ```
 
-キーは `secrets/openai_key.txt` の先頭の非コメント行でも可（`sk-` 以外のプレフィックスも可）。
+キーは `secrets/openai_key.txt` の先頭の非コメント行でも可（`sk-` 以外のプレフィックスも可）。カスタム端点は `OPENAI_BASE_URL` または `openai_base_url.txt`。
 
 ---
 
 ## 注意
 
-1. オフライン／オンラインの認証情報を混在させないこと。  
+1. 脱敏と QA はデフォルトで同じ `openai_key.txt` を使う。ローカル推論だけに向ける場合は `OPENAI_BASE_URL` を明示すること。  
 2. `process_email_qa.py` は既存の JSONL に含まれる `file` を読み、該当 `.md` をスキップして再開しやすくしています。全件やり直す場合は JSONL を削除または退避してください。
 
 ---
