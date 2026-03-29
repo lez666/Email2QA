@@ -1,6 +1,10 @@
 # 本地 API Key（不应提交）
 secrets/
 
+# 编辑器遗留的无标题草稿
+/Untitled
+prompts/Untitled
+
 # Python 缓存文件
 __pycache__/
 *.pyc

@@ -49,13 +49,13 @@ def load_gemini_key() -> str:
 def build_prompt(email_markdown: str, filename: str) -> str:
     """
     对 Gemini，我们直接拼成一个长文本 prompt：
-    - 先是系统指令（distill_unitree_emails_system.txt）
+    - 先是系统指令（distill_emails_system.txt）
     - 再附上当前这封邮件的 markdown 内容
     """
-    system_text = load_prompt("distill_unitree_emails_system.txt")
+    system_text = load_prompt("distill_emails_system.txt")
     user_part = (
         f"下面是一个 Markdown 格式的技术支持邮件线程内容（文件名：{filename}）。"
-        "这些数据是直接从邮件转换而来的原始 Markdown，未经过任何 LLM 处理。\n\n"
+        "这些数据应已在离线环境完成格式转换与隐私脱敏，可发往模型做结构化抽取。\n\n"
         "---------------- 原始邮件开始 ----------------\n"
         f"{email_markdown}\n"
         "---------------- 原始邮件结束 ----------------\n\n"
